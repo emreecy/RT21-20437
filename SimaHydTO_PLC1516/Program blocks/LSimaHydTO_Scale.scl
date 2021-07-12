@@ -1,0 +1,72 @@
+﻿FUNCTION "LSimaHydTO_Scale" : LReal
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      input : LReal;
+      inBegin : LReal;
+      inEnd : LReal;
+      valBegin : LReal;
+      valEnd : LReal;
+   END_VAR
+
+   VAR_TEMP 
+      tempOut : LReal;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	// Function scales output value dependent upon the input value
+	// 
+	// Use the "FC_BC_Scale" instruction to scale a floating-point number by mapping it to a specific value range.
+	// You specify the value range with the valBegin and valEnd parameters. The result of the scaling is an Lreal.
+	//
+	// The following figure shows an example of how values can be scaled:
+	//
+	//
+	//   valEnd |               _______________
+	//          |              /|
+	//          |             / |
+	//          |            /  |
+	// valBegin |___________/   |
+	//          |___________|___|______________________________________
+	//               inBegin     inEnd
+	//               
+	//
+	
+	
+	IF #inEnd <= #inBegin THEN
+	  #tempOut := 1.0;
+	ELSIF #input <= #inBegin THEN
+	  #tempOut := #valBegin;
+	ELSIF #input > #inBegin AND #input < #inEnd THEN
+	  #tempOut := #valBegin + (#input - #inBegin) * (#valEnd - #valBegin) / (#inEnd - #inBegin);
+	ELSIF #input >= #inEnd THEN
+	  #tempOut := #valEnd;
+	ELSE
+	  #tempOut := 1.0;
+	END_IF;
+	#LSimaHydTO_Scale := #tempOut;
+	
+	
+END_FUNCTION
+

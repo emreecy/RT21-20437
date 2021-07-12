@@ -1,0 +1,50 @@
+﻿FUNCTION "LSimaHydTO_DiameterToArea" : Void
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      pistonDiameter : LReal;
+      pistonRodDiameter : LReal;
+   END_VAR
+
+   VAR_OUTPUT 
+      pistonArea : LReal;
+      pistonRodArea : LReal;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: HMI support program - Internal use  
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	IF #pistonDiameter > 0.0 THEN
+	  #pistonArea := #pistonDiameter*#pistonDiameter * 0.7853981;
+	  IF #pistonRodDiameter > 0.0 AND #pistonRodDiameter < #pistonDiameter THEN
+	    #pistonRodArea := (#pistonDiameter*#pistonDiameter -  #pistonRodDiameter*#pistonRodDiameter) * 0.7853981;
+	  ELSE
+	    #pistonRodArea := 0.0;
+	  END_IF;
+	ELSE
+	  #pistonRodArea := 0.0;
+	  #pistonArea := 0.0;
+	END_IF;
+	
+	
+END_FUNCTION
+

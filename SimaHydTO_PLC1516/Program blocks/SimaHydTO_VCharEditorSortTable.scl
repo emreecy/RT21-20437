@@ -1,0 +1,104 @@
+﻿FUNCTION "SimaHydTO_VCharEditorSortTable" : Void
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      hmiConnection : "SimaHydTO_typeHMIConnection";
+      sortVChar : "LSimaHydTO_typeVCharData";
+   END_VAR
+
+   VAR_TEMP 
+      tempIndex : Int;
+      tempIndex2 : Int;
+      tempVCharIndex : Int;
+      tempReal : Real;
+      tempMinVelocity : Real;
+      tempMaxVelocity : Real;
+      tempTableLowerBound : DInt;
+      tempTableUpperBound : DInt;
+   END_VAR
+
+   VAR CONSTANT 
+      MAXIMUM_REAL : Real := 0.0;
+      MINIMUM_REAL : Real := 0.0;
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_VCharEditorSortTable
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Sort editor table
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 17.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	"SimaHydTO_GetRealArrayBounds"(lowerBound=>#tempTableLowerBound,
+	                               upperBound=>#tempTableUpperBound,
+	                               arrayOfReal:=#hmiConnection.VCharEditor.Table.Velocity);
+	
+	//Save actual table from HMI to VChar data
+	FOR #tempIndex := #tempTableLowerBound TO #tempTableUpperBound DO
+	  #tempVCharIndex := #tempIndex + #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex;
+	  IF ((#tempVCharIndex <= #sortVChar.MaxIdx)
+	    AND (#hmiConnection.VCharEditor.Table.Appearance[#tempIndex] > 0))
+	  THEN
+	    #sortVChar.Velocity[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.Velocity[#tempIndex];
+	    #sortVChar.QOutput[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.QOutput[#tempIndex];
+	  END_IF;
+	END_FOR;
+	
+	//Reset maximum values
+	#tempMinVelocity := #MAXIMUM_REAL;
+	#tempMaxVelocity := #MINIMUM_REAL;
+	//Sorting
+	#tempIndex := 0;
+	
+	//Sort table  
+	REPEAT
+	  //Check elements
+	  FOR #tempIndex2 := #tempIndex TO #sortVChar.MaxIdx DO
+	    //Check minimum and maximum
+	    IF (#sortVChar.Velocity[#tempIndex2] > #tempMaxVelocity)
+	    THEN
+	      #tempMaxVelocity := #sortVChar.Velocity[#tempIndex2];
+	    END_IF;
+	    IF (#sortVChar.Velocity[#tempIndex2] < #tempMinVelocity)
+	    THEN
+	      #tempMinVelocity := #sortVChar.Velocity[#tempIndex2];
+	    END_IF;
+	    //Check for data exchange
+	    IF (#sortVChar.QOutput[#tempIndex2] < #sortVChar.QOutput[#tempIndex])
+	    THEN
+	      //Exchange QOutput
+	      #tempReal := #sortVChar.QOutput[#tempIndex];
+	      #sortVChar.QOutput[#tempIndex] := #sortVChar.QOutput[#tempIndex2];
+	      #sortVChar.QOutput[#tempIndex2] := #tempReal;
+	      //Exchange Velocity
+	      #tempReal := #sortVChar.Velocity[#tempIndex];
+	      #sortVChar.Velocity[#tempIndex] := #sortVChar.Velocity[#tempIndex2];
+	      #sortVChar.Velocity[#tempIndex2] := #tempReal;
+	    END_IF;
+	  END_FOR;
+	  //Next line
+	  #tempIndex := #tempIndex + 1;
+	UNTIL (#tempIndex > #sortVChar.MaxIdx)
+	END_REPEAT;
+	
+	IF #sortVChar.VelocityLimitNegative = 0.0 THEN
+	  #sortVChar.VelocityLimitNegative := #tempMinVelocity;
+	END_IF;
+	IF #sortVChar.VelocityLimitPositive = 0.0 THEN
+	  #sortVChar.VelocityLimitPositive := #tempMaxVelocity;
+	END_IF;
+	
+END_FUNCTION
+

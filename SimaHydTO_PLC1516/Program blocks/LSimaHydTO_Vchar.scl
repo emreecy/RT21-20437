@@ -1,0 +1,102 @@
+﻿FUNCTION "LSimaHydTO_Vchar" : LReal
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      VChar : REF_TO "LSimaHydTO_typeVCharData";
+      setPoint : LReal;
+      qOutput : LReal;
+      forward : Bool;
+      backward : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      tempSetPoint : LReal;
+      tempV0 : LReal;
+      tempV1 : LReal;
+      tempQ0 : LReal;
+      tempQ1 : LReal;
+      tempRetValue : LReal;
+      tempIdx : DInt;
+      tempBegIdx : DInt;
+      tempEndIdx : DInt;
+      tempInverse : Bool;
+      tempZeroZonePos : LReal;
+      tempZeroZoneNeg : LReal;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	#tempSetPoint := LIMIT(MN := #VChar^.VelocityLimitNegative, IN := (#setPoint), MX := #VChar^.VelocityLimitPositive);
+	#tempBegIdx := 0;
+	#tempEndIdx := #VChar^.MaxIdx;
+	
+	#tempInverse := #VChar^.Velocity[#tempEndIdx] < #VChar^.Velocity[#tempBegIdx];
+	WHILE (#tempEndIdx - #tempBegIdx) >= 2 DO
+	  #tempIdx := (#tempEndIdx + #tempBegIdx) / 2;
+	  IF (#VChar^.Velocity[#tempIdx] >= #tempSetPoint AND NOT #tempInverse)
+	    OR
+	    (#VChar^.Velocity[#tempIdx] <= #tempSetPoint AND #tempInverse)
+	  THEN
+	    #tempEndIdx := #tempIdx;
+	  ELSE
+	    #tempBegIdx := #tempIdx;
+	  END_IF;
+	END_WHILE;
+	
+	#tempV0 := #VChar^.Velocity[#tempBegIdx];
+	#tempV1 := #VChar^.Velocity[#tempEndIdx];
+	#tempQ0 := #VChar^.QOutput[#tempBegIdx];
+	#tempQ1 := #VChar^.QOutput[#tempEndIdx];
+	
+	IF #tempV0 = #tempV1 THEN
+	  #tempRetValue := (#tempQ0 + #tempQ1) / 2.0;
+	ELSE
+	  #tempRetValue := #tempQ0 + (#tempQ1 - #tempQ0) * (#tempSetPoint - #tempV0) / (#tempV1 - #tempV0);
+	END_IF;
+	
+	// new 
+	IF #VChar^.ZeroZonePositive <> 0.0
+	  AND #VChar^.ZeroZoneNegative <> 0.0
+	THEN
+	  #tempZeroZoneNeg := - ABS(#VChar^.ZeroZoneNegative);
+	  #tempZeroZonePos := ABS(#VChar^.ZeroZonePositive);
+	  IF #tempRetValue <= #tempZeroZonePos
+	    AND #tempRetValue >= #tempZeroZoneNeg
+	  THEN
+	    IF #forward OR #qOutput >= #tempZeroZonePos THEN
+	      #tempRetValue := #tempZeroZonePos;
+	    ELSIF #backward OR #qOutput <= #tempZeroZoneNeg THEN
+	      #tempRetValue := #tempZeroZoneNeg;
+	    ELSE
+	      #tempRetValue := 0.5 * (#tempZeroZonePos + #tempZeroZoneNeg);
+	    END_IF;
+	    IF NOT (#forward OR #backward) AND #setPoint = 0.0 THEN
+	      #tempRetValue := 0.5 * (#tempZeroZonePos + #tempZeroZoneNeg);
+	    END_IF;
+	    
+	    
+	  END_IF;
+	END_IF;
+	#LSimaHydTO_Vchar := LIMIT(MN := #VChar^.QOutput[0], IN := #tempRetValue, MX := #VChar^.QOutput[#VChar^.MaxIdx]);
+	
+END_FUNCTION
+

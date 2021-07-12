@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V16" />
+  <DocumentInfo>
+    <Created>2021-07-12T14:47:19.4175407Z</Created>
+    <ExportSetting>WithDefaults</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>TIA Portal Version Control Interface</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <OptionPackage>
+        <DisplayName>TIA Portal Openness</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>STEP 7 Safety</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>WinCC Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+  <Section Name="None">
+    <Member Name="Command" Datatype="&quot;SimaHydTO_typeHMIConnectionBasicAxisControlCommand&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="powerEnable" Datatype="Bool" /><Member Name="powerStartMode" Datatype="DInt" /><Member Name="powerStopMode" Datatype="Int" /><Member Name="resetExecute" Datatype="Bool" /><Member Name="resetFBExecute" Datatype="Bool" /><Member Name="resetRestart" Datatype="Bool" /><Member Name="homeExecute" Datatype="Bool" /><Member Name="homePosition" Datatype="LReal" /><Member Name="homeMode" Datatype="Int" /><Member Name="jogForward" Datatype="Bool" /><Member Name="jogBackward" Datatype="Bool" /><Member Name="jogVelocity" Datatype="LReal" /><Member Name="jogAcceleration" Datatype="LReal" /><Member Name="jogDeceleration" Datatype="LReal" /><Member Name="jogJerk" Datatype="LReal" /><Member Name="jogPositionControlled" Datatype="Bool" /></Section></Sections></Member>
+    <Member Name="Status" Datatype="&quot;SimaHydTO_typeHMIConnectionBasicAxisControlStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="powerStatus" Datatype="Bool" /><Member Name="powerBusy" Datatype="Bool" /><Member Name="resetDone" Datatype="Bool" /><Member Name="resetBusy" Datatype="Bool" /><Member Name="resetFBDone" Datatype="Bool" /><Member Name="resetFBBusy" Datatype="Bool" /><Member Name="homeDone" Datatype="Bool" /><Member Name="homeBusy" Datatype="Bool" /><Member Name="jogInVelocity" Datatype="Bool" /><Member Name="jogBusy" Datatype="Bool" /><Member Name="commandAborted" Datatype="Bool" /><Member Name="error" Datatype="Bool" /><Member Name="errorID" Datatype="Word" /><Member Name="statusID" Datatype="Int" /></Section></Sections></Member>
+    <Member Name="ControlDirectOutput" Datatype="&quot;SimaHydTO_typeIHMIConnectionBasicAxisControlDirectOutput&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="jogForward" Datatype="Bool" /><Member Name="jogBackward" Datatype="Bool" /><Member Name="commandValueForward" Datatype="LReal" /><Member Name="commandValueBackward" Datatype="LReal" /><Member Name="commandValueRamp" Datatype="LReal" /><Member Name="safetyDistance" Datatype="LReal" /></Section></Sections></Member>
+    <Member Name="StatusDirectOutput" Datatype="&quot;SimaHydTO_typeHMIConnectionBasicAxislStatusDirectOutput&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="active" Datatype="Bool" /><Member Name="rampingDown" Datatype="Bool" /><Member Name="minSafetyPositionOverrun" Datatype="Bool" /><Member Name="maxSafetyPositionOverrun" Datatype="Bool" /></Section></Sections></Member>
+  </Section>
+</Sections></Interface>
+      <IsFailsafeCompliant>false</IsFailsafeCompliant>
+      <Name>SimaHydTO_typeHMIConnectionBasicAxisControl</Name>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>HMI interface: Basic axis control (LAxisBasics)</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="4" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>SimaHydTO_typeHMIConnectionBasicAxisControl</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="6" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

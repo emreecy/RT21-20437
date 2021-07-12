@@ -1,0 +1,78 @@
+﻿FUNCTION "LSimaHydTO_GetPosAxisEncoderData" : Word
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      axis {InstructionName := 'TO_PositioningAxis'; LibVersion := '4.0'} : TO_PositioningAxis;
+   END_VAR
+
+   VAR_OUTPUT 
+      inverseDirection : Bool;
+      sensorSystem : DInt;
+      motionType : DInt;
+      leadScrew : LReal;
+      modulo {InstructionName := 'TO_Struct_Modulo'; LibVersion := '4.0'} : TO_Struct_Modulo;
+      sensorParameter {InstructionName := 'TO_Struct_SensorParameter'; LibVersion := '4.0'} : TO_Struct_SensorParameter;
+   END_VAR
+
+   VAR_TEMP 
+      tempActiveEncoder : Int;
+   END_VAR
+
+   VAR CONSTANT 
+      MAX_SENSOR_NUMBER : Int := 4;
+      ERR_NO_ENCODER_ACTIVE : Word := 16#8200;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: read pos axis encoder parameter  
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    27.06.2019    APC_ERLF            First released version
+	//================================================================================
+	
+	FOR #tempActiveEncoder := 1 TO #MAX_SENSOR_NUMBER DO
+	  IF #axis.StatusSensor[#tempActiveEncoder].Control THEN
+	    EXIT;
+	  END_IF;
+	END_FOR;
+	
+	IF #tempActiveEncoder >= 1 AND #tempActiveEncoder <= #MAX_SENSOR_NUMBER THEN
+	  #LSimaHydTO_GetPosAxisEncoderData := 0;
+	  
+	  #inverseDirection := #axis.Sensor[#tempActiveEncoder].InverseDirection;
+	  #sensorSystem := #axis.Sensor[#tempActiveEncoder].System;
+	  #motionType := #axis.Properties.MotionType;
+	  #leadScrew := #axis.Mechanics.LeadScrew;
+	  #modulo.Enable := #axis.Modulo.Enable;
+	  #modulo.Length := #axis.Modulo.Length;
+	  #modulo.StartValue := #axis.Modulo.StartValue;
+	  
+	  #sensorParameter.DeterminableRevolutions := #axis.Sensor[#tempActiveEncoder].Parameter.DeterminableRevolutions;
+	  #sensorParameter.DistancePerRevolution := #axis.Sensor[#tempActiveEncoder].Parameter.DistancePerRevolution;
+	  #sensorParameter.FineResolutionXist1 := #axis.Sensor[#tempActiveEncoder].Parameter.FineResolutionXist1;
+	  #sensorParameter.FineResolutionXist2 := #axis.Sensor[#tempActiveEncoder].Parameter.FineResolutionXist2;
+	  #sensorParameter.Resolution := #axis.Sensor[#tempActiveEncoder].Parameter.Resolution;
+	  #sensorParameter.StepsPerRevolution := #axis.Sensor[#tempActiveEncoder].Parameter.StepsPerRevolution;
+	  
+	ELSE
+	  #LSimaHydTO_GetPosAxisEncoderData := #ERR_NO_ENCODER_ACTIVE;
+	END_IF;
+	
+	
+	
+END_FUNCTION
+

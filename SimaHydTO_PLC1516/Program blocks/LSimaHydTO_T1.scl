@@ -1,0 +1,129 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_T1"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      enable : Bool;
+      inputValue : LReal;
+      timeConstant : LReal;
+      sampleTime : LReal;
+   END_VAR
+
+   VAR_OUTPUT 
+      active { ExternalWritable := 'False'} : Bool;
+      error { ExternalWritable := 'False'} : Bool;
+      outputValue { ExternalWritable := 'False'} : LReal;
+   END_VAR
+
+   VAR 
+      statA0 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statA1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statB1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statX1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statY1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statX { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statY { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statFirstRun { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := TRUE;
+   END_VAR
+
+   VAR CONSTANT 
+      MIN_DEVIATION : LReal := 1.0E-06;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	// ************  PT1-element**********************************************************************
+	//Formula:     bilinear transformation 1/s := T/2*(z+1)/(z-1) (Tustins Approximation) ************
+	//Caution!:
+	//    1. FB has to be called in an equidistant task (e.g. synchronous Cycle)
+	//    2. values for timeConstant and sampleTime need to have the same base-unit (e.g. µsec) 
+	//    3. FB only for tests. Using at own risk
+	//Description of parameters 
+	//   INPUT:
+	//      inputValue:     input for smoothing  
+	//      timeConstant:   time constant of T1-element To  
+	//      sampleTime:     cycle time of calling the FB 
+	//      
+	//   OUTPUT:
+	//      outputValue:    Output T1-element
+	//      active:         FB is active (=true) or inactive (=false)
+	//      error:          error at activation: sampleTime <= 0 or timeConstant < 0*****************
+	
+	
+	
+	
+	// Initialize filter--------------------------------------------
+	IF #enable THEN
+	  //initialize
+	  IF #timeConstant < 0.0 OR #sampleTime <= 0.0 THEN
+	    #error := TRUE;
+	    #statActive := FALSE;
+	    #statFirstRun := TRUE;
+	  ELSE
+	    IF #statFirstRun THEN
+	      #error := FALSE;
+	      #statX1 := #inputValue;
+	      #statY := #inputValue;
+	      #statY1 := #inputValue;
+	      #statFirstRun := FALSE;
+	    END_IF;
+	    IF NOT #statActive THEN
+	      IF ABS_LREAL(#inputValue - #statY) > #MIN_DEVIATION THEN
+	        #statActive := TRUE;
+	        #active := TRUE;
+	      END_IF;
+	    END_IF;
+	  END_IF;
+	ELSIF #statActive OR NOT #statFirstRun THEN
+	  #statActive := FALSE;
+	  #active := FALSE;
+	  #error := FALSE;
+	  #statFirstRun := TRUE;
+	  
+	END_IF;
+	// execute smoothing filter ---------------------------------------    
+	IF #statActive THEN
+	  // smoothing filter
+	  #statB1 := (#sampleTime - 2 * #timeConstant) / (#sampleTime + 2 * #timeConstant);
+	  #statA0 := #sampleTime / (#sampleTime + 2 * #timeConstant);
+	  #statA1 := #statA0;
+	  #statX := #inputValue;
+	  #statY := #statA0 * #statX + #statA1 * #statX1 - #statB1 * #statY1;
+	  IF ABS(#statY - #inputValue) < #MIN_DEVIATION THEN
+	    #statY := #inputValue;
+	    #statActive := FALSE;
+	    #active := FALSE;
+	  END_IF;
+	  #statY1 := #statY;
+	  #statX1 := #statX;
+	  #outputValue := #statY;
+	ELSE
+	  #statY1 := #inputValue;
+	  #outputValue := #inputValue;
+	END_IF;
+	
+	
+	
+	
+END_FUNCTION_BLOCK
+

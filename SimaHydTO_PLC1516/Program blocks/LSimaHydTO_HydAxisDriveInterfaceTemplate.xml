@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V16" />
+  <DocumentInfo>
+    <Created>2021-07-12T14:47:14.9842016Z</Created>
+    <ExportSetting>WithDefaults</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>TIA Portal Version Control Interface</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <OptionPackage>
+        <DisplayName>TIA Portal Openness</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>STEP 7 Safety</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>WinCC Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Blocks.GlobalDB ID="0">
+    <AttributeList>
+      <AutoNumber>true</AutoNumber>
+      <DBAccessibleFromOPCUA>false</DBAccessibleFromOPCUA>
+      <HeaderAuthor>APC_ERLF</HeaderAuthor>
+      <HeaderFamily>LSimaHydTO</HeaderFamily>
+      <HeaderName />
+      <HeaderVersion>1.0</HeaderVersion>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+  <Section Name="Static">
+    <Member Name="tel2" Datatype="PD_TEL2" Version="4.0" Remanence="NonRetain" Accessibility="Public"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="Input" Datatype="PD_TEL2_IN" Version="4.0"><Sections><Section Name="None"><Member Name="ZSW1" Datatype="PD_ZSW1" Version="4.0"><Sections><Section Name="None"><Member Name="NoSpeedDeviation" Datatype="Bool" /><Member Name="ControlRequested" Datatype="Bool" /><Member Name="SpeedComparisonValusReachedExeeded" Datatype="Bool" /><Member Name="TorqueLimitNotReached" Datatype="Bool" /><Member Name="OpenHoldingBrake" Datatype="Bool" /><Member Name="NoMotorOvertemperature" Datatype="Bool" /><Member Name="ActualSpeedPositive" Datatype="Bool" /><Member Name="NoPowerUnitOvertemperature" Datatype="Bool" /><Member Name="ReadyToSwitchOn" Datatype="Bool" /><Member Name="ReadyToOperate" Datatype="Bool" /><Member Name="OperationEnabled" Datatype="Bool" /><Member Name="FaultPresent" Datatype="Bool" /><Member Name="NoCoastStopActivated" Datatype="Bool" /><Member Name="NoQuickStopActivated" Datatype="Bool" /><Member Name="SwitchingOnInhibited" Datatype="Bool" /><Member Name="AlarmPresent" Datatype="Bool" /></Section></Sections></Member><Member Name="NIST_B" Datatype="DWord" /><Member Name="ZSW2" Datatype="PD_ZSW2" Version="4.0"><Sections><Section Name="None"><Member Name="TravelToFixedEndStopActive" Datatype="Bool" /><Member Name="Reserved_Bit09" Datatype="Bool" /><Member Name="PulsesEnabled" Datatype="Bool" /><Member Name="MotorDataSetChangeoverActive" Datatype="Bool" /><Member Name="SlaveSignOfLifeBit0" Datatype="Bool" /><Member Name="SlaveSignOfLifeBit1" Datatype="Bool" /><Member Name="SlaveSignOfLifeBit2" Datatype="Bool" /><Member Name="SlaveSignOfLifeBit3" Datatype="Bool" /><Member Name="DriveDataSetEffectiveBit0" Datatype="Bool" /><Member Name="DriveDataSetEffectiveBit1" Datatype="Bool" /><Member Name="DriveDataSetEffectiveBit2" Datatype="Bool" /><Member Name="DriveDataSetEffectiveBit3" Datatype="Bool" /><Member Name="DriveDataSetEffectiveBit4" Datatype="Bool" /><Member Name="AlarmClassBit0" Datatype="Bool" /><Member Name="AlarmClassBit1" Datatype="Bool" /><Member Name="ParkingAxisActive" Datatype="Bool" /></Section></Sections></Member></Section></Sections></Member><Member Name="Output" Datatype="PD_TEL2_OUT" Version="4.0"><Sections><Section Name="None"><Member Name="STW1" Datatype="PD_STW1" Version="4.0"><Sections><Section Name="None"><Member Name="Reserved_Bit08" Datatype="Bool" /><Member Name="Reserved_Bit09" Datatype="Bool" /><Member Name="ControlByPlc" Datatype="Bool" /><Member Name="SetpointInversion" Datatype="Bool" /><Member Name="OpenHoldingBrake" Datatype="Bool" /><Member Name="RaiseMotorizedPotentiometerSetpoint" Datatype="Bool" /><Member Name="LowerMotorizedPotentiometerSetpoint" Datatype="Bool" /><Member Name="Reserved_Bit15" Datatype="Bool" /><Member Name="On" Datatype="Bool" /><Member Name="NoCoastStop" Datatype="Bool" /><Member Name="NoQuickStop" Datatype="Bool" /><Member Name="EnableOperation" Datatype="Bool" /><Member Name="EnableRampGenerator" Datatype="Bool" /><Member Name="UnfreezeRampGenerator" Datatype="Bool" /><Member Name="EnableSetpoint" Datatype="Bool" /><Member Name="FaultAcknowledge" Datatype="Bool" /></Section></Sections></Member><Member Name="NSOLL_B" Datatype="DWord" /><Member Name="STW2" Datatype="PD_STW2" Version="4.0"><Sections><Section Name="None"><Member Name="TravelToFixedEndstop" Datatype="Bool" /><Member Name="Reserved_Bit09" Datatype="Bool" /><Member Name="Reserved_Bit10" Datatype="Bool" /><Member Name="MotorSwitchoverFinished" Datatype="Bool" /><Member Name="MasterSignOfLifeBit0" Datatype="Bool" /><Member Name="MasterSignOfLifeBit1" Datatype="Bool" /><Member Name="MasterSignOfLifeBit2" Datatype="Bool" /><Member Name="MasterSignOfLifeBit3" Datatype="Bool" /><Member Name="DriveDataSetSelectionBit0" Datatype="Bool" /><Member Name="DriveDataSetSelectionBit1" Datatype="Bool" /><Member Name="DriveDataSetSelectionBit2" Datatype="Bool" /><Member Name="DriveDataSetSelectionBit3" Datatype="Bool" /><Member Name="DriveDataSetSelectionBit4" Datatype="Bool" /><Member Name="Reserved_Bit05" Datatype="Bool" /><Member Name="Reserved_Bit06" Datatype="Bool" /><Member Name="ParkingAxisSelection" Datatype="Bool" /></Section></Sections></Member></Section></Sections></Member></Section></Sections></Member>
+    <Member Name="tel81" Datatype="PD_TEL81" Version="4.0" Remanence="NonRetain" Accessibility="Public"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="Input" Datatype="PD_TEL81_IN" Version="4.0"><Sections><Section Name="None"><Member Name="ZSW2_ENC" Datatype="PD_ZSW2_ENC" Version="4.0"><Sections><Section Name="None"><Member Name="Reserved_Bit08" Datatype="Bool" /><Member Name="ControlRequested" Datatype="Bool" /><Member Name="Reserved_Bit10" Datatype="Bool" /><Member Name="Reserved_Bit11" Datatype="Bool" /><Member Name="SlaveLifeSignBit0" Datatype="Bool" /><Member Name="SlaveLifeSignBit1" Datatype="Bool" /><Member Name="SlaveLifeSignBit2" Datatype="Bool" /><Member Name="SlaveLifeSignBit3" Datatype="Bool" /><Member Name="Reserved_Bit00" Datatype="Bool" /><Member Name="Reserved_Bit01" Datatype="Bool" /><Member Name="Reserved_Bit02" Datatype="Bool" /><Member Name="FaultPresent" Datatype="Bool" /><Member Name="Reserved_Bit04" Datatype="Bool" /><Member Name="Reserved_Bit05" Datatype="Bool" /><Member Name="Reserved_Bit06" Datatype="Bool" /><Member Name="AlarmPresent" Datatype="Bool" /></Section></Sections></Member><Member Name="G1_ZSW" Datatype="PD_Gx_ZSW" Version="4.0"><Sections><Section Name="None"><Member Name="Probe1Deflected" Datatype="Bool" /><Member Name="Probe2Deflected" Datatype="Bool" /><Member Name="Reserved_Bit10" Datatype="Bool" /><Member Name="EncoderFaultAcknowledgeActive" Datatype="Bool" /><Member Name="HomePositionExecuted" Datatype="Bool" /><Member Name="AbsoluteValueCyclicallyExecuted" Datatype="Bool" /><Member Name="ParkingSensorExecuted" Datatype="Bool" /><Member Name="SensorError" Datatype="Bool" /><Member Name="Function1Active" Datatype="Bool" /><Member Name="Function2Active" Datatype="Bool" /><Member Name="Function3Active" Datatype="Bool" /><Member Name="Function4Active" Datatype="Bool" /><Member Name="Value1Available" Datatype="Bool" /><Member Name="Value2Available" Datatype="Bool" /><Member Name="Value3Available" Datatype="Bool" /><Member Name="Value4Available" Datatype="Bool" /></Section></Sections></Member><Member Name="G1_XIST1" Datatype="DWord" /><Member Name="G1_XIST2" Datatype="DWord" /></Section></Sections></Member><Member Name="Output" Datatype="PD_TEL81_OUT" Version="4.0"><Sections><Section Name="None"><Member Name="STW2_ENC" Datatype="PD_STW2_ENC" Version="4.0"><Sections><Section Name="None"><Member Name="Reserved_Bit08" Datatype="Bool" /><Member Name="Reserved_Bit09" Datatype="Bool" /><Member Name="ControlByPlc" Datatype="Bool" /><Member Name="Reserved_Bit11" Datatype="Bool" /><Member Name="MasterSignOfLifeBit0" Datatype="Bool" /><Member Name="MasterSignOfLifeBit1" Datatype="Bool" /><Member Name="MasterSignOfLifeBit2" Datatype="Bool" /><Member Name="MasterSignOfLifeBit3" Datatype="Bool" /><Member Name="Reserved_Bit00" Datatype="Bool" /><Member Name="Reserved_Bit01" Datatype="Bool" /><Member Name="Reserved_Bit02" Datatype="Bool" /><Member Name="Reserved_Bit03" Datatype="Bool" /><Member Name="Reserved_Bit04" Datatype="Bool" /><Member Name="Reserved_Bit05" Datatype="Bool" /><Member Name="Reserved_Bit06" Datatype="Bool" /><Member Name="FaultAcknowledge" Datatype="Bool" /></Section></Sections></Member><Member Name="G1_STW" Datatype="PD_Gx_STW" Version="4.0"><Sections><Section Name="None"><Member Name="Reserved_Bit08" Datatype="Bool" /><Member Name="Reserved_Bit09" Datatype="Bool" /><Member Name="Reserved_Bit10" Datatype="Bool" /><Member Name="Reserved_Bit11" Datatype="Bool" /><Member Name="Reserved_Bit12" Datatype="Bool" /><Member Name="AbsoluteValueCyclically" Datatype="Bool" /><Member Name="RequestParkingEncoder" Datatype="Bool" /><Member Name="AcknowledgeError" Datatype="Bool" /><Member Name="Function1Request" Datatype="Bool" /><Member Name="Function2Request" Datatype="Bool" /><Member Name="Function3Request" Datatype="Bool" /><Member Name="Function4Request" Datatype="Bool" /><Member Name="Command0Request" Datatype="Bool" /><Member Name="Command1Request" Datatype="Bool" /><Member Name="Command2Request" Datatype="Bool" /><Member Name="Mode" Datatype="Bool" /></Section></Sections></Member></Section></Sections></Member></Section></Sections></Member>
+  </Section>
+</Sections></Interface>
+      <IsOnlyStoredInLoadMemory>false</IsOnlyStoredInLoadMemory>
+      <IsWriteProtectedInAS>false</IsWriteProtectedInAS>
+      <MemoryLayout>Standard</MemoryLayout>
+      <Name>LSimaHydTO_HydAxisDriveInterfaceTemplate</Name>
+      <Number>33051</Number>
+      <ProgrammingLanguage>DB</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="4" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>LSimaHydTO_HydAxisDriveInterfaceTemplate</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="6" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.GlobalDB>
+</Document>

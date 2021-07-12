@@ -1,0 +1,299 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_HydraulicSimulationDrive"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.22
+   VAR_INPUT 
+      enable : Bool;
+      initPosition : LReal;
+      minPosition : LReal := -1000000000000.0;
+      maxPosition : LReal := 1000000000000.0;
+      maxVelocity : LReal := 500.0;
+      maxForce : LReal := 100.0;
+      springDistance : LReal := 1.0;
+      externalForce : LReal := 0.0;
+      dynamicFrictionFactor : LReal;
+      fixedStop : LReal := 1000000000000.0;
+      fixedStopInverse : Bool;
+      forceInverse : Bool;
+      delayTime : LReal;
+      cycleTime : UDInt;
+      vChar_DB_NUMBER : UInt;
+      axisTO : DB_ANY;
+   END_VAR
+
+   VAR_OUTPUT 
+      busy { ExternalWritable := 'False'} : Bool;
+      active { ExternalWritable := 'False'} : Bool;
+      error { ExternalWritable := 'False'} : Bool;
+      status { ExternalWritable := 'False'} : Word;
+      simulatedPosition { ExternalWritable := 'False'} : LReal;
+      simulatedForce { ExternalWritable := 'False'} : LReal;
+      simulatedVChar { ExternalWritable := 'False'} : UInt;
+      forceSensorAnalog_A { ExternalWritable := 'False'} : Word;
+      forceSensorAnalog_B { ExternalWritable := 'False'} : Word;
+   END_VAR
+
+   VAR_IN_OUT 
+      tel2in {InstructionName := 'PD_TEL2_IN'; LibVersion := '4.0'} : PD_TEL2_IN;
+      tel2out {InstructionName := 'PD_TEL2_OUT'; LibVersion := '4.0'} : PD_TEL2_OUT;
+      tel81in {InstructionName := 'PD_TEL81_IN'; LibVersion := '4.0'} : PD_TEL81_IN;
+      tel81out {InstructionName := 'PD_TEL81_OUT'; LibVersion := '4.0'} : PD_TEL81_OUT;
+   END_VAR
+
+   VAR 
+      statSetPoint { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statVelSetPoint { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statActualVChar { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UInt;
+      statSampleTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statActualPosition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statActualForce { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statForceFactor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statEnableOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instSetPointPT1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+      statPosLimitForce { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statNegLimitForce { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statFrictionForce { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      instSimpleEncSetValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_SimpleEncTel81";
+      statVCharDB { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DB_ANY;
+      statErrorVariant { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      instProfiDriveTel2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_ProfiDriveTel2";
+      statDriveEnabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statIntVelocityFactor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := 1.0;
+   END_VAR
+
+   VAR_TEMP 
+      tempDeltaPosition : LReal;
+      tempMinPos : LReal;
+      tempMaxPos : LReal;
+      tempActPosOld : LReal;
+      tempVCharVar : Variant;
+      tempRefToVChar : REF_TO "LSimaHydTO_typeVCharData";
+      tempAccFactor : LReal;
+   END_VAR
+
+   VAR CONSTANT 
+      ERR_INVALID_TYPE_OF_AXIS : Word := 16#8201;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: Simulation of hydraulic axis   
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00    15.03.2018    APC_ERLF            First released version
+	//01.22    22.04.2020    APC_ERLF            improved: units are taken into account for the control
+	//================================================================================
+	
+	
+	IF #enable THEN
+	  IF NOT #statEnableOld THEN //positive edge at enable
+	    #error := FALSE;
+	    #status := 16#0000;
+	    #statSampleTime := UDINT_TO_LREAL(#cycleTime) * lreal#1.0E-9;
+	    #statActualPosition := #initPosition;
+	    
+	    CASE TypeOfDB(#axisTO) OF
+	            
+	        TO_PositioningAxis:
+	            #statIntVelocityFactor := "LSimaHydTO_GetPosAxisCorrection"(axis := #axisTO, accelFactor => #tempAccFactor);
+	            
+	        TO_SynchronousAxis:
+	            #statIntVelocityFactor := "LSimaHydTO_GetSyncAxisCorrection"(axis := #axisTO, accelFactor => #tempAccFactor) ;
+	            
+	        ELSE
+	            #error := TRUE;
+	            #status := #ERR_INVALID_TYPE_OF_AXIS; // erorr
+	            RETURN;
+	    END_CASE;
+	    
+	    #busy := TRUE;
+	    #active := TRUE;
+	    
+	    
+	    
+	  END_IF;
+	  REGION evaluteVChar
+	    IF #vChar_DB_NUMBER > 0 THEN
+	      #statVCharDB := UINT_TO_DB_ANY(#vChar_DB_NUMBER);
+	      #tempVCharVar := DB_ANY_TO_VARIANT(in := #statVCharDB, err => #statErrorVariant);
+	      IF #statErrorVariant = 0 THEN
+	        #tempRefToVChar ?= #tempVCharVar;
+	        
+	        IF TypeOf(#tempVCharVar) <> LSimaHydTO_typeVCharData THEN
+	          #statErrorVariant := 8200;
+	        END_IF;
+	      END_IF;
+	      IF #statErrorVariant <> 0 THEN
+	        #statActualVChar := 0;
+	        
+	      ELSE
+	        // check consinsesty of VChar
+	        IF #tempRefToVChar^.MaxIdx < 1 OR #tempRefToVChar^.VelocityLimitPositive <= #tempRefToVChar^.VelocityLimitNegative THEN
+	          #statActualVChar := 0;
+	        ELSE
+	          #statActualVChar := #vChar_DB_NUMBER;
+	        END_IF;
+	      END_IF;
+	    ELSE
+	      #statActualVChar := 0;
+	    END_IF;
+	    
+	    #instProfiDriveTel2(setpoint => #statSetPoint,
+	                        driveEnabled => #statDriveEnabled,
+	                        tel2in := #tel2in,
+	                        tel2out := #tel2out);
+	    
+	    
+	    
+	    IF #statActualVChar = 0 THEN
+	      #statVelSetPoint := "LSimaHydTO_Scale"(input := #statSetPoint,
+	                                           inBegin := -100.0,
+	                                           inEnd := 100.0,
+	                                           valBegin := - #maxVelocity,
+	                                           valEnd := #maxVelocity);
+	    ELSE
+	      
+	      #statVelSetPoint := "LSimaHydTO_VcharInverse"(qOutput := #statSetPoint, VChar := #tempRefToVChar^);
+	      #statVelSetPoint := LIMIT(MN := - #maxVelocity, IN := #statVelSetPoint, MX := #maxVelocity);
+	    END_IF;
+	    #statVelSetPoint := #statVelSetPoint / #statIntVelocityFactor;
+	    #simulatedVChar := #statActualVChar;
+	  END_REGION
+	  
+	  #statActualForce := LIMIT(MN := - #maxForce, IN := #statActualForce, MX := #maxForce);
+	  IF (#statActualForce > 0.0 AND
+	    #statVelSetPoint > 0.0)
+	    OR
+	    (#statActualForce < 0.0 AND
+	    #statVelSetPoint < 0.0)
+	  THEN
+	    #statForceFactor := MAX(IN1 := 0.0, IN2 := SQRT((#maxForce - ABS(#statActualForce)) / #maxForce));
+	  ELSE
+	    #statForceFactor := 1.0;
+	  END_IF;
+	  
+	  
+	  #instSetPointPT1(enable := #enable AND #delayTime > 0.0,
+	                   inputValue := #statVelSetPoint,
+	                   timeConstant := #delayTime,
+	                   sampleTime := #statSampleTime
+	                   // ,outputValue => 
+	                   // ,active => 
+	                   // ,error => 
+	                   );
+	  
+	  #tempDeltaPosition := (#instSetPointPT1.outputValue) * #statSampleTime * #statForceFactor;
+	  
+	  //calculate AND LIMIT actual postition
+	  #tempActPosOld := #statActualPosition;
+	  
+	  IF #fixedStopInverse THEN
+	    #tempMinPos := LIMIT(MN := #minPosition
+	                         , IN := #fixedStop
+	                         , MX := #maxPosition);
+	    #tempMaxPos := #maxPosition;
+	  ELSE
+	    #tempMinPos := #minPosition;
+	    #tempMaxPos := LIMIT(MN := #minPosition
+	                         , IN := #fixedStop
+	                         , MX := #maxPosition);
+	    
+	  END_IF;
+	  #statActualPosition := LIMIT( MN := #tempMinPos
+	                              , IN := #tempActPosOld + #tempDeltaPosition
+	                              , MX := #tempMaxPos
+	                              );
+	  #statFrictionForce := #dynamicFrictionFactor*(#statActualPosition - #tempActPosOld)/#statSampleTime;
+	  IF #maxForce > 0.0
+	    AND #springDistance > 0.0
+	  THEN
+	    
+	    IF (#tempMaxPos - #statActualPosition) < #springDistance THEN
+	      
+	      #statPosLimitForce := LIMIT(MN := 0.0
+	                                  , IN := (1 - (#tempMaxPos - #statActualPosition) / #springDistance) * #maxForce
+	                                  , MX := #maxForce);
+	    ELSE
+	      #statPosLimitForce := 0.0;
+	    END_IF;
+	    IF (#statActualPosition - #tempMinPos) < #springDistance THEN
+	      #statNegLimitForce := -LIMIT(MN := 0.0
+	                                  , IN :=  (1 - (#statActualPosition - #tempMinPos) / #springDistance) * #maxForce
+	                                  , MX := #maxForce);
+	    ELSE
+	      #statNegLimitForce := 0.0;
+	    END_IF;
+	    
+	    #statActualForce := #externalForce + #statNegLimitForce + #statPosLimitForce + #statFrictionForce;
+	    
+	  ELSE
+	    #statActualForce := #externalForce + #statFrictionForce;
+	  END_IF;
+	  
+	  IF #forceInverse THEN
+	    #statActualForce := -1.0 * #statActualForce;
+	  END_IF;
+	  //write actual position to technology object
+	  
+	  #simulatedPosition := #statActualPosition;
+	  #simulatedForce := LIMIT(MN := - #maxForce, IN := #statActualForce, MX := #maxForce);
+	  
+	  IF #maxForce > 0.0 THEN
+	    IF #simulatedForce >= 0.0 THEN
+	      #forceSensorAnalog_A := INT_TO_WORD(LREAL_TO_INT(#simulatedForce * 27648.0 / #maxForce));
+	      #forceSensorAnalog_B := 0;
+	    ELSE
+	      #forceSensorAnalog_B := INT_TO_WORD(LREAL_TO_INT(ABS(#simulatedForce) * 27648.0 / #maxForce));
+	      #forceSensorAnalog_A := 0;
+	    END_IF;
+	  ELSE
+	    #forceSensorAnalog_A := 0;
+	    #forceSensorAnalog_B := 0;
+	  END_IF;
+	  
+	  #instSimpleEncSetValue(position := #simulatedPosition,
+	                         init := #enable AND NOT #statEnableOld,
+	                         axis:=#axisTO,
+	                         status=>#status,
+	                         tel81in := #tel81in,
+	                         tel81out := #tel81out);
+	  
+	  
+	  
+	ELSE
+	  IF #statEnableOld THEN //negative edge
+	    #busy := FALSE;
+	    #active := FALSE;
+	    #simulatedVChar := 0;
+	    
+	    #statActualPosition := 0.0;
+	    #statActualForce := 0.0;
+	    #simulatedPosition := 0.0;
+	    #simulatedForce := 0.0;
+	    #forceSensorAnalog_A := 0;
+	    #forceSensorAnalog_B := 0;
+	  END_IF;
+	END_IF;
+	
+	
+	#statEnableOld := #enable;
+	
+	
+	
+	
+	
+	
+END_FUNCTION_BLOCK
+

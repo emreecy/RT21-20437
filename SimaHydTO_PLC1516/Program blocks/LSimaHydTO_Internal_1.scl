@@ -1,0 +1,43 @@
+﻿FUNCTION "LSimaHydTO_Internal_1" : Void
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      "var" : Variant;
+   END_VAR
+
+   VAR_TEMP 
+      tempVar : "LSimaHydTO_typeVCharData";
+      tempProf : "LSimaHydTO_typeProfile";
+      tempAxisData : "LSimaHydTO_typeAxisData";
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	"LSimaHydTO_Internal_2"(#tempVar);
+	"LSimaHydTO_Internal_2"(#tempProf);
+	"LSimaHydTO_Internal_2"(#tempAxisData);
+	
+	
+	
+END_FUNCTION
+

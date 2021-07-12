@@ -1,0 +1,284 @@
+﻿FUNCTION "LSimaHydTO_GetUnitsCorrection" : LReal
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      lengthUnit : UDInt;
+      velocityUnit : UDInt;
+   END_VAR
+
+   VAR_OUTPUT 
+      accelFactor : LReal;
+   END_VAR
+
+   VAR_TEMP 
+      tempLengthFactor : LReal;
+      tempTimeFactor : LReal;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    24.04.2020    APC_ERLF            First released version
+	//================================================================================
+	//
+	
+	CASE #lengthUnit OF
+	    1013: //    mm
+	        // get time factor
+	        CASE #velocityUnit OF
+	            1061, 1062: // m/s, mm/s
+	                #tempTimeFactor := 1.0;
+	            1524, 1525, 1527:    // mm/min, m/min, km/min
+	                #tempTimeFactor := 60.0;
+	            1063, 1526, 1064:    // m/h, mm/h, km/h
+	                #tempTimeFactor := 3600.0;
+	            ELSE
+	                #tempTimeFactor := 1.0;
+	        END_CASE;
+	        // get length factor
+	        CASE #velocityUnit OF
+	            1062, 1524, 1526:  // mm/s, mm/min, mm/h
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	            1061, 1525, 1063:  // m/s, m/min, m/h
+	                #tempLengthFactor := 1000.0;
+	                #accelFactor := 0.001;
+	            1064, 1527: //   km/h, km/min
+	                #tempLengthFactor := 1000000.0;
+	                #accelFactor := 0.001;
+	            ELSE
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	        END_CASE;
+	        
+	    1019: //    in
+	        // get time factor
+	        CASE #velocityUnit OF
+	            1066, 1067: // in/s, ft/s
+	                #tempTimeFactor := 1.0;
+	            1069, 1070: // in/min, ft/min
+	                #tempTimeFactor := 60.0;
+	            1075:       // mi/h
+	                #tempTimeFactor := 3600.0;
+	            ELSE
+	                #tempTimeFactor := 1.0;
+	        END_CASE;
+	        // get length factor
+	        CASE #velocityUnit OF
+	            1066, 1069:  // in/s, in/min
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	            1067, 1070:  // ft/s, ft/min
+	                #tempLengthFactor := 12.0;
+	                #accelFactor := 1.0/#tempLengthFactor;
+	            1075:       // mi/h
+	                #tempLengthFactor := 63360.0;
+	                #accelFactor := 1.0 / 12.0;
+	            ELSE
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	        END_CASE;
+	        
+	        
+	    1010: //    m
+	        // get time factor
+	        CASE #velocityUnit OF
+	            1061, 1062: // m/s, mm/s
+	                #tempTimeFactor := 1.0;
+	            1524, 1525, 1527:    // mm/min, m/min, km/min
+	                #tempTimeFactor := 60.0;
+	            1063, 1526, 1064:    // m/h, mm/h, km/h
+	                #tempTimeFactor := 3600.0;
+	            ELSE
+	                #tempTimeFactor := 1.0;
+	        END_CASE;
+	        // get length factor
+	        CASE #velocityUnit OF
+	            1062, 1524, 1526:  // mm/s, mm/min, mm/h
+	                #tempLengthFactor := 0.001;
+	                #accelFactor := 1000.0;
+	            1061, 1525, 1063:  // m/s, m/min, m/h
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	            1064, 1527: //   km/h, km/min
+	                #tempLengthFactor := 1000.0;
+	                #accelFactor := 1.0;
+	            ELSE
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	        END_CASE;
+	        
+	    1018: //    ft
+	        // get time factor
+	        CASE #velocityUnit OF
+	            1066, 1067: // in/s, ft/s
+	                #tempTimeFactor := 1.0;
+	            1069, 1070: // in/min, ft/min
+	                #tempTimeFactor := 60.0;
+	            1075:       // mi/h
+	                #tempTimeFactor := 3600.0;
+	            ELSE
+	                #tempTimeFactor := 1.0;
+	        END_CASE;
+	        // get length factor
+	        CASE #velocityUnit OF
+	            1066, 1069:  // in/s, in/min
+	                #tempLengthFactor := 0.0833333;
+	                #accelFactor := 12.0;
+	            1067, 1070:  // ft/s, ft/min
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	            1075:       // mi/h
+	                #tempLengthFactor := 5280.0;
+	                #accelFactor := 1.0;
+	            ELSE
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	        END_CASE;
+	    1005, 1004: //    °,rad 
+	        // get time factor
+	        CASE #velocityUnit OF
+	            1086, 1521: // rad/s,°/s 
+	                #tempTimeFactor := 1.0;
+	            1522, 1523: // °/min, rad/min
+	                #tempTimeFactor := 60.0;
+	            ELSE
+	                #tempTimeFactor := 1.0;
+	        END_CASE;
+	        #tempLengthFactor := 1.0;
+	        #accelFactor := 1.0;
+	    1014: //    µm
+	        // get time factor
+	        CASE #velocityUnit OF
+	            1061, 1062: // m/s, mm/s
+	                #tempTimeFactor := 1.0;
+	            1524, 1525, 1527:    // mm/min, m/min, km/min
+	                #tempTimeFactor := 60.0;
+	            1063, 1526, 1064:    // m/h, mm/h, km/h
+	                #tempTimeFactor := 3600.0;
+	            ELSE
+	                #tempTimeFactor := 1.0;
+	        END_CASE;
+	        // get length factor
+	        CASE #velocityUnit OF
+	            1062, 1524, 1526:  // mm/s, mm/min, mm/h
+	                #tempLengthFactor := 1.0E+3;
+	                #accelFactor := 1.0E-3;
+	            1061, 1525, 1063:  // m/s, m/min, m/h
+	                #tempLengthFactor := 1.0E+6;
+	                #accelFactor := 1.0E-6;
+	            1064, 1527: //   km/h, km/min
+	                #tempLengthFactor := 1.0E+9;
+	                #accelFactor := 1.0E-6;
+	            ELSE
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	        END_CASE;
+	        
+	    1015: //    nm
+	        // get time factor
+	        CASE #velocityUnit OF
+	            1061, 1062: // m/s, mm/s
+	                #tempTimeFactor := 1.0;
+	            1524, 1525, 1527:    // mm/min, m/min, km/min
+	                #tempTimeFactor := 60.0;
+	            1063, 1526, 1064:    // m/h, mm/h, km/h
+	                #tempTimeFactor := 3600.0;
+	            ELSE
+	                #tempTimeFactor := 1.0;
+	        END_CASE;
+	        // get length factor
+	        CASE #velocityUnit OF
+	            1062, 1524, 1526:  // mm/s, mm/min, mm/h
+	                #tempLengthFactor := 1.0E+6;
+	                #accelFactor := 1.0E-6;
+	            1061, 1525, 1063:  // m/s, m/min, m/h
+	                #tempLengthFactor := 1.0E+9;
+	                #accelFactor := 1.0E-9;
+	            1064, 1527: //   km/h, km/min
+	                #tempLengthFactor := 1.0E+12;
+	                #accelFactor := 1.0E-9;
+	            ELSE
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	        END_CASE;
+	        
+	    1011: //    km
+	        // get time factor
+	        CASE #velocityUnit OF
+	            1061, 1062: // m/s, mm/s
+	                #tempTimeFactor := 1.0;
+	            1524, 1525, 1527:    // mm/min, m/min, km/min
+	                #tempTimeFactor := 60.0;
+	            1063, 1526, 1064:    // m/h, mm/h, km/h
+	                #tempTimeFactor := 3600.0;
+	            ELSE
+	                #tempTimeFactor := 1.0;
+	        END_CASE;
+	        // get length factor
+	        CASE #velocityUnit OF
+	            1062, 1524, 1526:  // mm/s, mm/min, mm/h
+	                #tempLengthFactor := 1.0E-6;
+	                #accelFactor := 1.0E+6;
+	            1061, 1525, 1063:  // m/s, m/min, m/h
+	                #tempLengthFactor := 1.0E-3;
+	                #accelFactor := 1.0E+3;
+	            1064, 1527: //   km/h, km/min
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0E+3;
+	            ELSE
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	        END_CASE;
+	        
+	    1021: //    mi
+	        // get time factor
+	        CASE #velocityUnit OF
+	            1066, 1067: // in/s, ft/s
+	                #tempTimeFactor := 1.0;
+	            1069, 1070: // in/min, ft/min
+	                #tempTimeFactor := 60.0;
+	            1075:       // mi/h
+	                #tempTimeFactor := 3600.0;
+	            ELSE
+	                #tempTimeFactor := 1.0;
+	        END_CASE;
+	        // get length factor
+	        CASE #velocityUnit OF
+	            1066, 1069:  // in/s, in/min
+	                #tempLengthFactor := 1.0 / 63360.0;
+	                #accelFactor := 63360.0;
+	            1067, 1070:  // ft/s, ft/min
+	                #tempLengthFactor := 1.0 / 5280.0;
+	                #accelFactor := 5280.0;
+	            1075:       // mi/h
+	                #tempLengthFactor := 1.0;
+	            ELSE
+	                #tempLengthFactor := 1.0;
+	                #accelFactor := 1.0;
+	        END_CASE;
+	        
+	    ELSE
+	        #tempTimeFactor := 1.0;
+	        #tempLengthFactor := 1.0;
+	        #accelFactor := 1.0;
+	END_CASE;
+	
+	#LSimaHydTO_GetUnitsCorrection := #tempTimeFactor / #tempLengthFactor;
+END_FUNCTION
+

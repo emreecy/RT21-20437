@@ -1,0 +1,79 @@
+﻿FUNCTION "LSimaHydTO_Profile" : LReal
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      inputValue : LReal;
+   END_VAR
+
+   VAR_OUTPUT 
+      inProfile : Bool;
+   END_VAR
+
+   VAR_IN_OUT 
+      profile : "LSimaHydTO_typeProfile";
+   END_VAR
+
+   VAR_TEMP 
+      tempSetPoint : LReal;
+      tempV0 : LReal;
+      tempV1 : LReal;
+      tempQ0 : LReal;
+      tempQ1 : LReal;
+      tempRetValue : LReal;
+      tempIdx : DInt;
+      tempBegIdx : DInt;
+      tempEndIdx : DInt;
+      tempMinValue : LReal;
+      tempMaxValue : LReal;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	#tempBegIdx := 0;
+	#tempEndIdx := LIMIT(MN := 0,IN := #profile.MaxIdx,MX := "LSIMAHYD_PROFILE_POINTS_UPPER_LIMIT");
+	#tempMinValue := #profile.LeadingValue[#tempBegIdx];
+	#tempMaxValue := #profile.LeadingValue[#tempEndIdx];
+	#inProfile := #inputValue >= #tempMinValue AND #inputValue <= #tempMaxValue;
+	#tempSetPoint := LIMIT(MN := #tempMinValue, IN := (#inputValue), MX := #tempMaxValue);
+	WHILE (#tempEndIdx - #tempBegIdx) >= 2 DO
+	  #tempIdx := (#tempEndIdx + #tempBegIdx) / 2;
+	  IF (#profile.LeadingValue[#tempIdx] >= #tempSetPoint )
+	  THEN
+	    #tempEndIdx := #tempIdx;
+	  ELSE
+	    #tempBegIdx := #tempIdx;
+	  END_IF;
+	END_WHILE;
+	#tempV0 := #profile.LeadingValue[#tempBegIdx];
+	#tempV1 := #profile.LeadingValue[#tempEndIdx];
+	#tempQ0 := #profile.Value[#tempBegIdx];
+	#tempQ1 := #profile.Value[#tempEndIdx];
+	IF #tempV0 = #tempV1 THEN
+	  #tempRetValue := (#tempQ0 + #tempQ1) / 2.0;
+	ELSE
+	  #tempRetValue := #tempQ0 + (#tempQ1 - #tempQ0) * (#tempSetPoint - #tempV0) / (#tempV1 - #tempV0);
+	END_IF;
+	#LSimaHydTO_Profile :=  #tempRetValue;
+	
+	
+END_FUNCTION
+

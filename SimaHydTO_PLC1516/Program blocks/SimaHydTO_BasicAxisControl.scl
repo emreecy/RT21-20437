@@ -1,0 +1,169 @@
+﻿FUNCTION_BLOCK "SimaHydTO_BasicAxisControl"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      hmiConnection : "SimaHydTO_typeHMIConnection";
+      axisData : "LSimaHydTO_typeAxisData";
+      axesArray : Array[*] of "SimaHydTO_typeAxesArray";
+   END_VAR
+
+   VAR 
+      statActualAxisIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statAxisIndexOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := -1;
+      instAxisBasicsPosAxis { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_AxisBasics_PosAxis";
+      instAxisBasicsSyncAxis { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_AxisBasics_SyncAxis";
+      instDirectOutputControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_MC_DirectOutputControl";
+      instLSimaHydTO_MC_RequestDirection { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_MC_RequestDirection";
+      instLSimaHydTO_MC_Reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_MC_Reset";
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_BasicAxisControl
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Transfer data from/to HMI to/from selected axis
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 12.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	
+	//Check axis selection, if axis has changed
+	IF  #hmiConnection.AxisSelector.Status.selectionChanged
+	  AND #hmiConnection.AxisSelector.Status.dataValid
+	THEN
+	  //Preset axis commands
+	  #statActualAxisIndex := #hmiConnection.AxisSelector.Status.actualAxisIndex;
+	  IF #statAxisIndexOld > -1 THEN
+	    //Save axis commands
+	    #axesArray[#statAxisIndexOld].basicControl := #hmiConnection.BasicAxisControl.Command;
+	    #axesArray[#statAxisIndexOld].basicControl.homeExecute := FALSE;
+	    #axesArray[#statAxisIndexOld].basicControl.jogBackward := FALSE;
+	    #axesArray[#statAxisIndexOld].basicControl.jogForward := FALSE;
+	    #axesArray[#statAxisIndexOld].basicControl.resetExecute := FALSE;
+	    #axesArray[#statAxisIndexOld].basicControl.resetFBExecute := FALSE;
+	    
+	    #axesArray[#statAxisIndexOld].directOutputControl := #hmiConnection.BasicAxisControl.ControlDirectOutput;
+	    #axesArray[#statAxisIndexOld].directOutputControl.jogForward := FALSE;
+	    #axesArray[#statAxisIndexOld].directOutputControl.jogBackward := FALSE;
+	  END_IF;
+	  
+	  
+	  #hmiConnection.BasicAxisControl.Command := #axesArray[#statActualAxisIndex].basicControl;
+	  #hmiConnection.BasicAxisControl.Command.homeExecute := FALSE;
+	  #hmiConnection.BasicAxisControl.Command.jogBackward := FALSE;
+	  #hmiConnection.BasicAxisControl.Command.jogForward := FALSE;
+	  #hmiConnection.BasicAxisControl.Command.resetExecute := FALSE;
+	  #hmiConnection.BasicAxisControl.Command.resetFBExecute := FALSE;
+	  //Preset manual output paramter and commands
+	  #hmiConnection.BasicAxisControl.ControlDirectOutput := #axesArray[#statActualAxisIndex].directOutputControl;
+	  #hmiConnection.BasicAxisControl.ControlDirectOutput.jogBackward := FALSE;
+	  #hmiConnection.BasicAxisControl.ControlDirectOutput.jogForward := FALSE;
+	  #statAxisIndexOld := #statActualAxisIndex;
+	END_IF;
+	
+	#instLSimaHydTO_MC_RequestDirection(RequestForward := #hmiConnection.BasicAxisControl.Command.jogForward,
+	                                    RequestBackward := #hmiConnection.BasicAxisControl.Command.jogBackward,
+	                                    Axis := #axisData);
+	
+	
+	CASE #hmiConnection.AxisSelector.Status.selectedTypeOfAxis OF
+	    
+	  2: // positioning axis
+	    #instAxisBasicsPosAxis(axis := #hmiConnection.AxisSelector.Status.selectedTO_Axis,
+	                           powerEnable := #hmiConnection.BasicAxisControl.Command.powerEnable,
+	                           powerStartMode := #hmiConnection.BasicAxisControl.Command.powerStartMode,
+	                           powerStopMode := #hmiConnection.BasicAxisControl.Command.powerStopMode,
+	                           resetExecute := #hmiConnection.BasicAxisControl.Command.resetExecute,
+	                           resetRestart := #hmiConnection.BasicAxisControl.Command.resetRestart,
+	                           homeExecute := #hmiConnection.BasicAxisControl.Command.homeExecute,
+	                           homePosition := #hmiConnection.BasicAxisControl.Command.homePosition,
+	                           homeMode := #hmiConnection.BasicAxisControl.Command.homeMode,
+	                           jogForward := #hmiConnection.BasicAxisControl.Command.jogForward AND #instLSimaHydTO_MC_RequestDirection.RampingForward,
+	                           jogBackward := #hmiConnection.BasicAxisControl.Command.jogBackward AND #instLSimaHydTO_MC_RequestDirection.RampingBackward,
+	                           jogVelocity := #hmiConnection.BasicAxisControl.Command.jogVelocity,
+	                           jogAcceleration := #hmiConnection.BasicAxisControl.Command.jogAcceleration,
+	                           jogDeceleration := #hmiConnection.BasicAxisControl.Command.jogDeceleration,
+	                           jogJerk := #hmiConnection.BasicAxisControl.Command.jogJerk,
+	                           jogPositionControlled := #hmiConnection.BasicAxisControl.Command.jogPositionControlled,
+	                           powerStatus => #hmiConnection.BasicAxisControl.Status.powerStatus,
+	                           powerBusy => #hmiConnection.BasicAxisControl.Status.powerBusy,
+	                           resetDone => #hmiConnection.BasicAxisControl.Status.resetDone,
+	                           resetBusy => #hmiConnection.BasicAxisControl.Status.resetBusy,
+	                           homeDone => #hmiConnection.BasicAxisControl.Status.homeDone,
+	                           homeBusy => #hmiConnection.BasicAxisControl.Status.homeBusy,
+	                           jogInVelocity => #hmiConnection.BasicAxisControl.Status.jogInVelocity,
+	                           jogBusy => #hmiConnection.BasicAxisControl.Status.jogBusy,
+	                           commandAborted => #hmiConnection.BasicAxisControl.Status.commandAborted,
+	                           error => #hmiConnection.BasicAxisControl.Status.error,
+	                           errorID => #hmiConnection.BasicAxisControl.Status.errorID,
+	                           statusID => #hmiConnection.BasicAxisControl.Status.statusID);
+	    
+	    #hmiConnection.AxisToData := "SimaHydTO_GetAxisToData_PosAxis"(#hmiConnection.AxisSelector.Status.selectedTO_Axis);
+	    
+	  3: // sync axis
+	    #instAxisBasicsSyncAxis(axis := #hmiConnection.AxisSelector.Status.selectedTO_Axis,
+	                            powerEnable := #hmiConnection.BasicAxisControl.Command.powerEnable,
+	                            powerStartMode := #hmiConnection.BasicAxisControl.Command.powerStartMode,
+	                            powerStopMode := #hmiConnection.BasicAxisControl.Command.powerStopMode,
+	                            resetExecute := #hmiConnection.BasicAxisControl.Command.resetExecute,
+	                            resetRestart := #hmiConnection.BasicAxisControl.Command.resetRestart,
+	                            homeExecute := #hmiConnection.BasicAxisControl.Command.homeExecute,
+	                            homePosition := #hmiConnection.BasicAxisControl.Command.homePosition,
+	                            homeMode := #hmiConnection.BasicAxisControl.Command.homeMode,
+	                            jogForward := #hmiConnection.BasicAxisControl.Command.jogForward,
+	                            jogBackward := #hmiConnection.BasicAxisControl.Command.jogBackward,
+	                            jogVelocity := #hmiConnection.BasicAxisControl.Command.jogVelocity,
+	                            jogAcceleration := #hmiConnection.BasicAxisControl.Command.jogAcceleration,
+	                            jogDeceleration := #hmiConnection.BasicAxisControl.Command.jogDeceleration,
+	                            jogJerk := #hmiConnection.BasicAxisControl.Command.jogJerk,
+	                            jogPositionControlled := #hmiConnection.BasicAxisControl.Command.jogPositionControlled,
+	                            powerStatus => #hmiConnection.BasicAxisControl.Status.powerStatus,
+	                            powerBusy => #hmiConnection.BasicAxisControl.Status.powerBusy,
+	                            resetDone => #hmiConnection.BasicAxisControl.Status.resetDone,
+	                            resetBusy => #hmiConnection.BasicAxisControl.Status.resetBusy,
+	                            homeDone => #hmiConnection.BasicAxisControl.Status.homeDone,
+	                            homeBusy => #hmiConnection.BasicAxisControl.Status.homeBusy,
+	                            jogInVelocity => #hmiConnection.BasicAxisControl.Status.jogInVelocity,
+	                            jogBusy => #hmiConnection.BasicAxisControl.Status.jogBusy,
+	                            commandAborted => #hmiConnection.BasicAxisControl.Status.commandAborted,
+	                            error => #hmiConnection.BasicAxisControl.Status.error,
+	                            errorID => #hmiConnection.BasicAxisControl.Status.errorID,
+	                            statusID => #hmiConnection.BasicAxisControl.Status.statusID);
+	    
+	    
+	    #hmiConnection.AxisToData := "SimaHydTO_GetAxisToData_SyncAxis"(#hmiConnection.AxisSelector.Status.selectedTO_Axis);
+	    
+	  ELSE
+	    ; // not suported
+	    
+	END_CASE;
+	#hmiConnection.BasicAxisControl.ControlDirectOutput.safetyDistance := MAX(IN1 := 0.0, IN2 := #hmiConnection.BasicAxisControl.ControlDirectOutput.safetyDistance);
+	#instDirectOutputControl(JogForward := #hmiConnection.BasicAxisControl.ControlDirectOutput.jogForward,
+	                         JogBackward := #hmiConnection.BasicAxisControl.ControlDirectOutput.jogBackward,
+	                         CommandValueForward := #hmiConnection.BasicAxisControl.ControlDirectOutput.commandValueForward,
+	                         CommandValueBackward := #hmiConnection.BasicAxisControl.ControlDirectOutput.commandValueBackward,
+	                         CommandValueRamp := #hmiConnection.BasicAxisControl.ControlDirectOutput.commandValueRamp,
+	                         SafetyDistance := #hmiConnection.BasicAxisControl.ControlDirectOutput.safetyDistance,
+	                         Busy => #hmiConnection.BasicAxisControl.StatusDirectOutput.active,
+	                         MinSafetyPositionOverrun => #hmiConnection.BasicAxisControl.StatusDirectOutput.minSafetyPositionOverrun,
+	                         MaxSafetyPositionOverrun => #hmiConnection.BasicAxisControl.StatusDirectOutput.maxSafetyPositionOverrun,
+	                         Axis := #axisData);
+	
+	#instLSimaHydTO_MC_Reset(Execute:=#hmiConnection.BasicAxisControl.Command.resetFBExecute,
+	                         Done=>#hmiConnection.BasicAxisControl.Status.resetFBDone,
+	                         Busy=>#hmiConnection.BasicAxisControl.Status.resetFBBusy,
+	                         Axis:=#axisData);
+	
+	
+END_FUNCTION_BLOCK
+

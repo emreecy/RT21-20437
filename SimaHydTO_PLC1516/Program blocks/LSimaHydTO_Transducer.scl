@@ -1,0 +1,47 @@
+﻿FUNCTION "LSimaHydTO_Transducer" : Void
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      rawValue : Word;
+      forceFactor : LReal;
+   END_VAR
+
+   VAR_IN_OUT 
+      statusTransducer : "LSimaHydTO_typeStatusTransducer";
+      transducer : "LSimaHydTO_typeTransducer";
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	#statusTransducer.RawValue := #rawValue;
+	IF #transducer.ErrorValue = #statusTransducer.RawValue THEN
+	  #statusTransducer.Error := TRUE;
+	ELSE
+	  #statusTransducer.PressureValue := WORD_TO_INT(#statusTransducer.RawValue) * #transducer.NominalPressure /
+	  INT_TO_REAL(#transducer.HWReference) + #transducer.Offset;
+	  #statusTransducer.ForceValue := #statusTransducer.PressureValue * #transducer.Area * #forceFactor;
+	  #statusTransducer.Error := FALSE;
+	END_IF;
+	
+	
+END_FUNCTION
+

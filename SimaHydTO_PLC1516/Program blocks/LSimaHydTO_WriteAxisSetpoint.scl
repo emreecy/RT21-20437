@@ -1,0 +1,141 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_WriteAxisSetpoint"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      setpoint { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      axis {InstructionName := 'TO_SpeedAxis'; LibVersion := '4.0'} : TO_SpeedAxis;
+   END_VAR
+
+   VAR_OUTPUT 
+      error { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+   END_VAR
+
+   VAR 
+      statActorType { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statByteOffset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statFirstCycle { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := TRUE;
+      statAddressOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct
+         RID { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DWord;
+         AREA { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte;
+         DB_NUMBER { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UInt;
+         OFFSET { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UDInt;
+      END_STRUCT;
+      statNsoll { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statOutput { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_VAR
+
+   VAR_TEMP 
+      tempAttributes : Byte;
+      tempDBLength : UDInt;
+      tempStatus : Int;
+      tempEno : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      AREA_DB : Byte := 16#8B;
+      STATUS_DONE : Word := 16#0000;
+      STATUS_BUSY : Word := 16#7001;
+      ALARM_OPTIMIZED_DB : UDInt := 9106;
+      ALARM_INTERNAL : UDInt := 9201;
+      ALARM_WRITE_OUTPUT : UDInt := 9401;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	// Set error FALSE
+	#error := FALSE;
+	
+	IF (#statFirstCycle)
+	THEN
+	  // Get adresses from TO
+	  #statActorType := #axis.Actor.Type;
+	  #statAddressOut.AREA := #axis.Actor.Interface.AddressOut.AREA;
+	  #statAddressOut.DB_NUMBER := #axis.Actor.Interface.AddressOut.DB_NUMBER;
+	  #statAddressOut.OFFSET := #axis.Actor.Interface.AddressOut.OFFSET;
+	  #statAddressOut.RID := #axis.Actor.Interface.AddressOut.RID;
+	  
+	  IF #statActorType = 0 THEN
+	    // analog
+	    
+	    #statByteOffset := UDINT_TO_INT(#statAddressOut.OFFSET / 8);
+	  ELSIF #statActorType = 1 THEN
+	    //profidrive
+	    #statByteOffset := UDINT_TO_INT(#statAddressOut.OFFSET / 8) + 2;
+	  END_IF;
+	  
+	  IF (#statAddressOut.AREA = #AREA_DB) THEN
+	    #tempStatus := ATTR_DB(REQ := TRUE
+	                           , DB_NUMBER := #statAddressOut.DB_NUMBER
+	                           , DB_LENGTH => #tempDBLength
+	                           , ATTRIB => #tempAttributes);
+	    
+	    IF (#tempStatus <> 0) THEN
+	      // Error in reading block data
+	      #error := TRUE;
+	      #status := UDINT_TO_WORD(#ALARM_INTERNAL);
+	      RETURN;
+	      
+	    ELSIF ((#tempDBLength = 0)
+	      AND (#tempAttributes.%X0 = FALSE))
+	    THEN
+	      // Block is optimized
+	      #error := TRUE;
+	      #status := UDINT_TO_WORD(#ALARM_OPTIMIZED_DB);
+	      RETURN;
+	      
+	    END_IF;
+	  END_IF;
+	  
+	  #statFirstCycle := FALSE;
+	END_IF;
+	
+	
+	#status := #STATUS_BUSY;
+	CASE #statActorType OF
+	  0: // analog
+	    #statOutput := LREAL_TO_INT(0.01 * #setpoint * 27648);
+	    POKE(area := #statAddressOut.AREA,
+	         dbNumber := #statAddressOut.DB_NUMBER,
+	         byteOffset := #statByteOffset,
+	         value := INT_TO_WORD(#statOutput),
+	         ENO => #tempEno);
+	  1: // profidrive
+	    #statNsoll := LREAL_TO_DINT(LIMIT(MN := -2.0, IN := 0.01 * #setpoint, MX := 1.999999999) * 1073741824.0);
+	    POKE(area := #statAddressOut.AREA,
+	         dbNumber := #statAddressOut.DB_NUMBER,
+	         byteOffset := #statByteOffset,
+	         value := DINT_TO_DWORD(#statNsoll),
+	         ENO => #tempEno);
+	END_CASE;
+	
+	
+	// Check if read worked
+	IF (#tempEno = FALSE) THEN
+	  #error := TRUE;
+	  
+	  #status := UDINT_TO_WORD(#ALARM_WRITE_OUTPUT);
+	END_IF;
+	
+	
+	
+END_FUNCTION_BLOCK
+

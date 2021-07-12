@@ -1,0 +1,39 @@
+﻿FUNCTION "LSimaHydTO_GetPosAxisCorrection" : LReal
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      axis {InstructionName := 'TO_PositioningAxis'; LibVersion := '4.0'} : TO_PositioningAxis;
+   END_VAR
+
+   VAR_OUTPUT 
+      accelFactor : LReal;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    24.04.2020    APC_ERLF            First released version
+	//================================================================================
+	//
+	
+	#LSimaHydTO_GetPosAxisCorrection := "LSimaHydTO_GetUnitsCorrection"(lengthUnit:=#axis.Units.LengthUnit,
+	                                velocityUnit:=#axis.Units.VelocityUnit,
+	                                accelFactor=>#accelFactor);
+	
+END_FUNCTION
+

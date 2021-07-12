@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V16" />
+  <DocumentInfo>
+    <Created>2021-07-12T14:47:19.7885506Z</Created>
+    <ExportSetting>WithDefaults</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>TIA Portal Version Control Interface</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <OptionPackage>
+        <DisplayName>TIA Portal Openness</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>STEP 7 Safety</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>WinCC Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+  <Section Name="None">
+    <Member Name="Control" Datatype="&quot;LSimaHydTO_typeInternalControl&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Command structure, use for axis control</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="AckError" Datatype="Bool" /><Member Name="ExecuteForceLimiting" Datatype="Bool" /><Member Name="ExecuteForceControl" Datatype="Bool" /><Member Name="RequestForward" Datatype="Bool" /><Member Name="RequestBackward" Datatype="Bool" /><Member Name="ForceCommand" Datatype="&quot;LSimaHydTO_typeInternalControlForceCmd&quot;"><Sections><Section Name="None"><Member Name="mode" Datatype="DInt" /><Member Name="forceProfileMode" Datatype="DInt" /><Member Name="conditionMode" Datatype="DInt" /><Member Name="compareMode" Datatype="DInt" /><Member Name="conditionValue" Datatype="LReal" /><Member Name="clampingMonitoring" Datatype="Bool" /><Member Name="followingErrorDeviation" Datatype="LReal" /><Member Name="forceValue" Datatype="LReal" /><Member Name="forceRamp" Datatype="LReal" /><Member Name="velocityLimitingValue" Datatype="LReal" /><Member Name="commandID" Datatype="UDInt" /></Section></Sections></Member><Member Name="DirectOutput" Datatype="&quot;LSimaHydTO_typeInternalControlDirectOutput&quot;"><Sections><Section Name="None"><Member Name="activate" Datatype="Bool" /><Member Name="jogForward" Datatype="Bool" /><Member Name="jogBackward" Datatype="Bool" /><Member Name="commandValueForward" Datatype="LReal" /><Member Name="commandValueBackward" Datatype="LReal" /><Member Name="commandValueRamp" Datatype="LReal" /><Member Name="offset" Datatype="LReal" /><Member Name="safetyDistance" Datatype="LReal" /><Member Name="commandID" Datatype="UDInt" /></Section></Sections></Member></Section></Sections></Member>
+    <Member Name="MotionData" Datatype="&quot;LSimaHydTO_typeInternalMotionData&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Motion command data</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="PositionControlled" Datatype="Bool" /><Member Name="ForceLimited" Datatype="Bool" /><Member Name="ForceControlled" Datatype="Bool" /><Member Name="RampingForward" Datatype="Bool" /><Member Name="RampingBackward" Datatype="Bool" /><Member Name="ForceCmdTracking" Datatype="&quot;LSimaHydTO_typeInternalCmdTracking&quot;"><Sections><Section Name="None"><Member Name="CommandID" Datatype="UDInt" /><Member Name="State" Datatype="Word" /></Section></Sections></Member><Member Name="DirectOutput" Datatype="&quot;LSimaHydTO_typeInternalStatusDirectOutput&quot;"><Sections><Section Name="None"><Member Name="active" Datatype="Bool" /><Member Name="rampingDown" Datatype="Bool" /><Member Name="minSafetyPositionOverrun" Datatype="Bool" /><Member Name="maxSafetyPositionOverrun" Datatype="Bool" /><Member Name="QOutputValue" Datatype="LReal" /><Member Name="cmdTracking" Datatype="&quot;LSimaHydTO_typeInternalCmdTracking&quot;"><Sections><Section Name="None"><Member Name="CommandID" Datatype="UDInt" /><Member Name="State" Datatype="Word" /></Section></Sections></Member></Section></Sections></Member></Section></Sections></Member>
+    <Member Name="PositionLimits_SW" Datatype="&quot;LSimaHydTO_typePositionLimits&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Software position limit switch</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="Active" Datatype="Bool" /><Member Name="MinPosition" Datatype="LReal" /><Member Name="MaxPosition" Datatype="LReal" /></Section></Sections></Member>
+    <Member Name="UnitsCorrection" Datatype="&quot;LSimaHydTO_typeInternalUnitsCorrection&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Correction of units</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="velFactor" Datatype="LReal" /><Member Name="accFactor" Datatype="LReal" /></Section></Sections></Member>
+    <Member Name="CommandIDPool" Datatype="UDInt"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">false</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Source for unique command ID's</MultiLanguageText></Comment></Member>
+  </Section>
+</Sections></Interface>
+      <IsFailsafeCompliant>false</IsFailsafeCompliant>
+      <Name>LSimaHydTO_typeInternal</Name>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>Internal axis data</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="4" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>LSimaHydTO_typeInternal</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="6" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

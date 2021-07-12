@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V16" />
+  <DocumentInfo>
+    <Created>2021-07-12T14:47:15.2161229Z</Created>
+    <ExportSetting>WithDefaults</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>TIA Portal Version Control Interface</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <OptionPackage>
+        <DisplayName>TIA Portal Openness</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>STEP 7 Safety</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>WinCC Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Blocks.GlobalDB ID="0">
+    <AttributeList>
+      <AutoNumber>true</AutoNumber>
+      <DBAccessibleFromOPCUA>false</DBAccessibleFromOPCUA>
+      <HeaderAuthor />
+      <HeaderFamily>SimaHydTO</HeaderFamily>
+      <HeaderName />
+      <HeaderVersion>1.0</HeaderVersion>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+  <Section Name="Static">
+    <Member Name="VChar" Datatype="Array[0..12] of &quot;SimaHydTO_typeVCharArray&quot;" Remanence="NonRetain" Accessibility="Public"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Valve charactersitics of the project to be controlled via HMI</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="VChar_DB" Datatype="DB_ANY"><Subelement Path="0"><StartValue>5001</StartValue></Subelement></Member><Member Name="measurementConfig" Datatype="&quot;LSimaHydTO_typeMeasurementConfig&quot;"><Sections><Section Name="None"><Member Name="waitTimeMeasurement" Datatype="DInt" /><Member Name="maxMeasurementTime" Datatype="DInt" /><Member Name="offset" Datatype="LReal" /><Member Name="safetyDistance" Datatype="LReal" /><Member Name="forward" Datatype="&quot;LSimaHydTO_typeMeasurementQOutput&quot;"><Sections><Section Name="None"><Member Name="enableMeasurement" Datatype="Bool" /><Member Name="maxVelocity" Datatype="Real" /><Member Name="setpointForMovement" Datatype="Real" /><Member Name="ramp" Datatype="Real" /><Member Name="minQOutputValue" Datatype="Real" /><Member Name="fineRange" Datatype="&quot;LSimaHydTO_typeMeasurementQOutputRange&quot;"><Sections><Section Name="None"><Member Name="maxQOutputValue" Datatype="Real" /><Member Name="numberOfPoints" Datatype="Int" /></Section></Sections></Member><Member Name="coarseRange" Datatype="&quot;LSimaHydTO_typeMeasurementQOutputRange&quot;"><Sections><Section Name="None"><Member Name="maxQOutputValue" Datatype="Real" /><Member Name="numberOfPoints" Datatype="Int" /></Section></Sections></Member></Section></Sections></Member><Member Name="backward" Datatype="&quot;LSimaHydTO_typeMeasurementQOutput&quot;"><Sections><Section Name="None"><Member Name="enableMeasurement" Datatype="Bool" /><Member Name="maxVelocity" Datatype="Real" /><Member Name="setpointForMovement" Datatype="Real" /><Member Name="ramp" Datatype="Real" /><Member Name="minQOutputValue" Datatype="Real" /><Member Name="fineRange" Datatype="&quot;LSimaHydTO_typeMeasurementQOutputRange&quot;"><Sections><Section Name="None"><Member Name="maxQOutputValue" Datatype="Real" /><Member Name="numberOfPoints" Datatype="Int" /></Section></Sections></Member><Member Name="coarseRange" Datatype="&quot;LSimaHydTO_typeMeasurementQOutputRange&quot;"><Sections><Section Name="None"><Member Name="maxQOutputValue" Datatype="Real" /><Member Name="numberOfPoints" Datatype="Int" /></Section></Sections></Member></Section></Sections></Member><Member Name="numberOfRetryMeasurement" Datatype="Int" /></Section></Sections></Member><Member Name="initialized" Datatype="Bool" /></Section></Sections></Member>
+  </Section>
+</Sections></Interface>
+      <IsOnlyStoredInLoadMemory>false</IsOnlyStoredInLoadMemory>
+      <IsRetainMemResEnabled>false</IsRetainMemResEnabled>
+      <IsWriteProtectedInAS>false</IsWriteProtectedInAS>
+      <MemoryLayout>Optimized</MemoryLayout>
+      <MemoryReserve>100</MemoryReserve>
+      <Name>SimaHydTO_VCharArray</Name>
+      <Number>33102</Number>
+      <ProgrammingLanguage>DB</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>Array of valve chracteristics usabel in HMI</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="4" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>SimaHydTO_VCharArray</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="6" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.GlobalDB>
+</Document>

@@ -1,0 +1,1566 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_HydAxis"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.22
+   VAR_INPUT 
+      pressure_A_RawValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      pressure_B_RawValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      cycleTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UDInt;
+   END_VAR
+
+   VAR_IN_OUT 
+      axisTO {InstructionName := 'TO_PositioningAxis'; LibVersion := '4.0'} : TO_PositioningAxis;
+      axisData : "LSimaHydTO_typeAxisData";
+   END_VAR
+
+   VAR 
+      statSampleTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statInit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := TRUE;
+      statAxisState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statAxisStateNext { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statAxisStateOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statPosCtrlOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statForceCtrlOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statForceLimOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statForceLimitingVelNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statForceLimIntPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statVCharOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UInt := 0;
+      statQOutput { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statQOutputOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statCtrlOutUppLimit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := 1000000000000.0;
+      statCtrlOutLowLimit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := -1000000000000.0;
+      statActualNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_typeMotionVector";
+      statCommandNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_typeMotionVector";
+      instVelSmoothingFilter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+      instAccSmoothingFilter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+      instVCharSmoothing { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+      instBalancePos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+      instBalanceForce { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+      instPositionController { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_PIDT1";
+      instForceController { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_PIDT1";
+      statForceLimitation { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statInternalStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statNumOfLoop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statCmdPosOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statForceProfileTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statForceConditionActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statConditionMode { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statCompareMode { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statConditionValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statVelocityLimitingValueNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statInProfileOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statForceCtrlCondition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statManEnableOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statForceCtrCmdValueOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statForceProfileDB { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DB_ANY;
+      statVCharDB { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DB_ANY;
+      statErrorVariant { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statMotionSetPointNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statForceCtrlActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statManQOutput { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statReqForward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statReqBackward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instValvesControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_ValvesControl";
+      statRampingForward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRampingBackward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statManOutDeceleration { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statDecelerationDistance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statManRamp { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statElapsedDelayTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statForceCtrlSetPointNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statStatusWordMaskedOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DWord;
+      instMC_MOVEVELOCITY_Zero {InstructionName := 'MC_MOVEVELOCITY'; LibVersion := '4.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : MC_MOVEVELOCITY;
+      instMC_VELOCITY_Zero_ForceCtrl {InstructionName := 'MC_MOVEVELOCITY'; LibVersion := '4.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : MC_MOVEVELOCITY;
+      statForceDirPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statAxisTOStatusWord { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DWord;
+      statAxisTOErrorWord { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DWord;
+      statDynamicLimits { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_typeDynamicLimits";
+      statExecuteMovement { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statEnable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instMC_HALT {InstructionName := 'MC_HALT'; LibVersion := '4.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : MC_HALT;
+      statIntForceFactor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := 0.1;
+      statIntVelocityFactor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := 1.0;
+      statExtError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statAutoReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statManPosCtrlOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statQOutputMan { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statQOutMax { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := 100.0;
+      statForceCommand { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_typeInternalControlForceCmd";
+      statConditionTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statForceLimPosCmd { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statInLimitationOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statFolErMin { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statFolErMax { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statPosWindow { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      instWriteAxisSetpoint { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_WriteAxisSetpoint";
+      statClamping { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRetVCHar { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statAdaption { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := TRUE;
+      instAxisAlarm {InstructionName := 'Program_Alarm'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Program_Alarm;
+      statErrInternal { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statErrInternalOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statErrAddValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statInstName { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : WString[80];
+      statAxisTOErrorReaction { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statSmoothRamp { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statSmoothRampOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statSmoothingModeOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statForceUnit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UDInt;
+      statLengthUnit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UDInt;
+      statVelocityUnit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UDInt;
+      statHomingDoneOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statMaxSetPoint { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+   END_VAR
+
+   VAR_TEMP 
+      tempRampGenActive : Bool;
+      tempCompareValue : LReal;
+      tempInProfile : Bool;
+      tempVCharVar : Variant;
+      tempForceProfileVar : Variant;
+      tempQOutput : LReal;
+      tempManualSafetyDistance : LReal;
+      tempRefToVChar : REF_TO "LSimaHydTO_typeVCharData";
+      tempRefToForceProfile : REF_TO "LSimaHydTO_typeProfile";
+      tempStatusWordMasked : DWord;
+      tempChangePosCtrl : Bool;
+      tempAbortMovement : Bool;
+      tempSmoothingMode : Int;
+      tempActualVelocity : LReal;
+      tempAccFactor : LReal;
+   END_VAR
+
+   VAR CONSTANT 
+      STATE_INACTIVE : DInt := 0;
+      STATE_STANDSTILL : DInt := 10;
+      STATE_MANUAL_OUT_CTRL : DInt := 15;
+      STATE_MOTION : DInt := 20;
+      STATE_FORCE_CONTROL : DInt := 40;
+      STATE_STOPPING : DInt := 50;
+      STATE_ERROR : DInt := -1;
+      MOTION_STATE_NOT_EXISTEND : Word := 16#0000;
+      MOTION_STATE_BUFFERED_OR_MOTION : Word := 16#0001;
+      MOTION_STATE_EXECUTED : Word := 16#0010;
+      MOTION_STATE_ABORTED : Word := 16#0020;
+      MOTION_STATE_ERROR : Word := 16#8000;
+      STATUS_WORD_MASK_MOTION_CMD : DWord := 16#A1E0_0F10;
+      NO_ERROR_REACTION : DInt := 0;
+      ERROR_REACTION_STOP : DInt := 1;
+      ERROR_REACTION_QUICK_STOP : DInt := 2;
+      ERROR_REACTION_EMERGENCY_STOP : DInt := 3;
+      ERROR_REACTION_DISABLE : DInt := 4;
+      ERROR_REACTION_TRACK_SETPOINTS : DInt := 5;
+      NO_ALARM : UDInt := 0;
+      ALARM_WRONG_SAMPLE_TIME : UDInt := 9100;
+      ALARM_TO_TYPE : UDInt := 9101;
+      ALARM_TO_CONFIGURATION_DSC : UDInt := 9105;
+      ALARM_OPTIMIZED_DB : UDInt := 9106;
+      ALARM_VALVE_PROFILE_DB : UDInt := 9120;
+      ALARM_VALVE_PROFILE_CONFIGURATION : UDInt := 9121;
+      ALARM_FORCE_PROFILE_DB : UDInt := 9125;
+      ALARM_FORCE_PROFILE_CONFIGURATION : UDInt := 9126;
+      ALARM_INTERNAL : UDInt := 9201;
+      ALARM_WRITE_OUTPUT : UDInt := 9401;
+      ALARM_TRANSDUCER : UDInt := 9415;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2016 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library: LSimaHydTO
+	//Tested with: S7-15xx
+	//Engineering: TIA Portal  V15
+	//Restrictions: -
+	//Requirements: S7-1500 (SW 2.5)
+	//Functionality: kernel functionality of hydraulic axis   
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00    01.08.2019    APC_ERLF            First released version
+	//01.22    22.04.2020    APC_ERLF              - improved: units are taken into account for the control
+	//================================================================================
+	REGION init
+	    // read init data from TO
+	    IF #statInit THEN
+	        #statAdaption := FALSE;
+	        #statSampleTime := UDINT_TO_LREAL(#cycleTime) * lreal#1.0E-9;
+	        
+	        IF #axisTO.PositionControl.EnableDSC THEN
+	            #axisData.ErrorWord.%X1 := TRUE;
+	            #axisData.ErrorDetail.Reaction := #ERROR_REACTION_DISABLE;
+	            #axisData.ErrorDetail.Number := #ALARM_TO_CONFIGURATION_DSC;
+	            
+	        END_IF;
+	        #statForceUnit := #axisTO.Units.ForceUnit;
+	        #statLengthUnit := #axisTO.Units.LengthUnit;
+	        #statVelocityUnit := #axisTO.Units.VelocityUnit;
+	        
+	        CASE #statForceUnit OF
+	            1120: //  N
+	                //  metric
+	                #statIntForceFactor := 0.1;
+	            1122: //  kN
+	                //  metric
+	                #statIntForceFactor := 0.0001;
+	                
+	            1094: //  lbf (pound-force)
+	                //  imperial
+	                #statIntForceFactor := 1.0;
+	            1093: //  ozf (ounce-force)
+	                //  imperial
+	                #statIntForceFactor := 16.0;
+	            1535: //  pdl (poundals)
+	                //  imperial
+	                #statIntForceFactor := 32.174049;
+	        END_CASE;
+	        
+	        #statIntVelocityFactor := "LSimaHydTO_GetUnitsCorrection"(lengthUnit := #statLengthUnit,
+	                                                                  velocityUnit := #statVelocityUnit,
+	                                                                  accelFactor=>#axisData.Internal.UnitsCorrection.accFactor);
+	        #axisData.Internal.UnitsCorrection.velFactor := #statIntVelocityFactor;
+	        IF #axisTO.Properties.MotionType = 0 THEN
+	            // linear axis
+	            #statMaxSetPoint := (#axisTO.Mechanics.LeadScrew * #axisTO.Actor.DriveParameter.MaxSpeed * #axisTO.LoadGear.Denominator * #statIntVelocityFactor) /
+	            (60.0 * #axisTO.LoadGear.Numerator);
+	        ELSE
+	            // rotatory axis
+	            #statMaxSetPoint := (#axisTO.Actor.DriveParameter.MaxSpeed * #axisTO.LoadGear.Denominator * #statIntVelocityFactor) /
+	                                (60.0 * #axisTO.LoadGear.Numerator);
+	        END_IF;
+	            
+	        IF #axisTO.Actor.Type = 0 THEN
+	            // analog output
+	            #statQOutMax := 100.0;
+	            IF #axisTO.Properties.MotionType = 0 THEN
+	                // linear axis
+	                #statMaxSetPoint := (#axisTO.Mechanics.LeadScrew * #axisTO.Actor.DriveParameter.ReferenceSpeed * #axisTO.LoadGear.Denominator * #statIntVelocityFactor) /
+	                (60.0 * #axisTO.LoadGear.Numerator);
+	            ELSE
+	                // rotatory axis
+	                #statMaxSetPoint := (#axisTO.Actor.DriveParameter.ReferenceSpeed * #axisTO.LoadGear.Denominator * #statIntVelocityFactor) /
+	                (60.0 * #axisTO.LoadGear.Numerator);
+	            END_IF;
+	            
+	        ELSIF #axisTO.Actor.Type = 1 THEN
+	            // ProfiDrive output
+	            IF #axisTO.Actor.DataAdaption = 1 THEN
+	                #statAdaption := TRUE;
+	            END_IF;
+	            #statQOutMax := MIN(IN1 := 200.0, IN2 := 100.0 * (#axisTO.Actor.DriveParameter.MaxSpeed / #axisTO.Actor.DriveParameter.ReferenceSpeed));
+	            IF #axisTO.Properties.MotionType = 0 THEN
+	                // linear axis
+	                #statMaxSetPoint := (#axisTO.Mechanics.LeadScrew * #axisTO.Actor.DriveParameter.MaxSpeed * #axisTO.LoadGear.Denominator * #statIntVelocityFactor) /
+	                (60.0 * #axisTO.LoadGear.Numerator);
+	            ELSE
+	                // rotatory axis
+	                #statMaxSetPoint := (#axisTO.Actor.DriveParameter.MaxSpeed * #axisTO.LoadGear.Denominator * #statIntVelocityFactor) /
+	                (60.0 * #axisTO.LoadGear.Numerator);
+	            END_IF;
+	            
+	        END_IF;
+	        #axisData.DataInitialized := TRUE;
+	    END_IF;
+	    IF #statAdaption THEN
+	        IF #axisTO.StatusDrive.CommunicationOK
+	            AND (#axisTO.StatusDrive.AdaptionState = 2 OR #axisTO.StatusDrive.AdaptionState = 3)
+	        THEN
+	            // ProfiDrive output
+	            #statQOutMax := MIN(IN1 := 200.0, IN2 := 100.0 * (#axisTO.Actor.DriveParameter.MaxSpeed / #axisTO.Actor.DriveParameter.ReferenceSpeed));
+	            IF #axisTO.Properties.MotionType = 0 THEN
+	                // linear axis
+	                #statMaxSetPoint := (#axisTO.Mechanics.LeadScrew * #axisTO.Actor.DriveParameter.MaxSpeed * #axisTO.LoadGear.Denominator * #statIntVelocityFactor) /
+	                (60.0 * #axisTO.LoadGear.Numerator);
+	            ELSE
+	                // rotatory axis
+	                #statMaxSetPoint := (#axisTO.Actor.DriveParameter.MaxSpeed * #axisTO.LoadGear.Denominator * #statIntVelocityFactor) /
+	                (60.0 * #axisTO.LoadGear.Numerator);
+	            END_IF;
+	            
+	            #statAdaption := FALSE;
+	        END_IF;
+	        
+	    END_IF;
+	END_REGION
+	// actual data section
+	REGION actualData
+	  // evaluation of axis data  
+	  
+	  #statAxisTOStatusWord := #axisTO.StatusWord;
+	  #statAxisTOErrorWord := #axisTO.ErrorWord;
+	  #statAxisTOErrorReaction := #axisTO.ErrorDetail.Reaction;
+	  #axisData.Velocity := #axisTO.Velocity;
+	  #statCommandNorm.Velocity :=  #axisData.Velocity/ #statIntVelocityFactor;
+	  #statCommandNorm.Acceleration := #axisTO.Acceleration;
+	  #statCommandNorm.Position := #axisTO.Position;
+	  #axisData.ActualSpeed := #axisTO.ActualSpeed;
+	  #tempActualVelocity := #axisTO.ActualVelocity;
+	  #statActualNorm.Velocity := #tempActualVelocity/ #statIntVelocityFactor;
+	  #statActualNorm.Acceleration := #axisTO.#ActualAcceleration;
+	  #statActualNorm.Position := #axisTO.ActualPosition;
+	  
+	  //software limit switches
+	  #axisData.Internal.PositionLimits_SW.Active := #axisTO.PositionLimits_SW.Active;
+	  #axisData.Internal.PositionLimits_SW.MaxPosition := #axisTO.PositionLimits_SW.MaxPosition;
+	  #axisData.Internal.PositionLimits_SW.MinPosition := #axisTO.PositionLimits_SW.MinPosition;
+	  
+	  
+	  
+	  #statDynamicLimits.MaxVelocity := #axisTO.DynamicLimits.MaxVelocity/ #statIntVelocityFactor;
+	  #statDynamicLimits.MaxAcceleration := #axisTO.DynamicLimits.MaxAcceleration * 0.99;
+	  #statDynamicLimits.MaxDeceleration := #axisTO.DynamicLimits.MaxDeceleration * 0.99;
+	  //#statDynamicLimits.MaxJerk := #axisTO.DynamicLimits.MaxJerk;
+	  
+	  #instVelSmoothingFilter(enable := #axisData.SmoothingFilter.VelocityFilter > 0.0,
+	                          inputValue := #tempActualVelocity,
+	                          timeConstant := #axisData.SmoothingFilter.VelocityFilter,
+	                          sampleTime := #statSampleTime,
+	                          outputValue => #axisData.ActualVelocity);
+	  
+	  #instAccSmoothingFilter(enable := #axisData.SmoothingFilter.AccelerationFilter > 0.0,
+	                          inputValue := #statActualNorm.Acceleration,
+	                          timeConstant := #axisData.SmoothingFilter.AccelerationFilter,
+	                          sampleTime := #statSampleTime,
+	                          outputValue => #axisData.ActualAcceleration);
+	  
+	  IF #statAxisTOErrorReaction > #axisData.ErrorDetail.Reaction THEN
+	    #statExtError := TRUE;
+	    #axisData.ErrorDetail.Reaction := #statAxisTOErrorReaction;
+	    #axisData.ErrorDetail.Number := #axisTO.ErrorDetail.Number;
+	    #axisData.ErrorWord := #axisData.ErrorWord OR #statAxisTOErrorWord;
+	  END_IF;
+	  
+	  IF #statExtError THEN
+	    IF #axisTO.ErrorDetail.Reaction = 0 THEN
+	      #statExtError := FALSE;
+	      #statAutoReset := TRUE;
+	    END_IF;
+	  END_IF;
+	  // read and calculate pressure/force actual values for ring side
+	  
+	  "LSimaHydTO_Transducer"(rawValue := #pressure_B_RawValue,
+	                        forceFactor := #statIntForceFactor,
+	                        statusTransducer := #axisData.Status_B_Transducer,
+	                        transducer := #axisData.Pressure_B_Transducer);
+	  
+	  // read and calculate pressure/force actual values for piston  side
+	  "LSimaHydTO_Transducer"(rawValue := #pressure_A_RawValue,
+	                        forceFactor := #statIntForceFactor,
+	                        statusTransducer := #axisData.Status_A_Transducer,
+	                        transducer := #axisData.Pressure_A_Transducer);
+	  
+	  IF #axisData.Status_B_Transducer.Error OR #axisData.Status_A_Transducer.Error THEN
+	    #axisData.ErrorWord.%X5 := TRUE;
+	    #axisData.ErrorDetail.Reaction := #ERROR_REACTION_DISABLE;
+	    #axisData.ErrorDetail.Number := #ALARM_TRANSDUCER;
+	    #statErrAddValue.%X0 := #axisData.Status_A_Transducer.Error;
+	    #statErrAddValue.%X1 := #axisData.Status_B_Transducer.Error;
+	    
+	  ELSE
+	    #axisData.ActualForce := #axisData.Status_A_Transducer.ForceValue - #axisData.Status_B_Transducer.ForceValue;
+	  END_IF;
+	  
+	END_REGION
+	
+	REGION enableForce
+	  //decode PLC-open force command
+	  
+	  IF #statAxisState > #STATE_INACTIVE AND #statAxisState < #STATE_STOPPING THEN
+	    IF (#axisData.Internal.Control.ExecuteForceLimiting AND NOT #axisData.Internal.MotionData.ForceControlled)
+	      OR
+	      (#axisData.Internal.Control.ExecuteForceControl AND NOT #statInternalStop)
+	    THEN
+	      // decode force limiting command
+	      #statForceCommand := #axisData.Internal.Control.ForceCommand;
+	      
+	      IF #statForceCommand.forceProfileMode > 2 THEN
+	        #statForceCommand.forceProfileMode := 2;
+	      ELSIF #statForceCommand.forceProfileMode < 0 THEN
+	        #statForceCommand.forceProfileMode := 0;
+	      END_IF;
+	      
+	      #statConditionMode := LIMIT(MN := 1, IN := #axisData.Internal.Control.ForceCommand.conditionMode, MX := 3);
+	      #statCompareMode := LIMIT(MN := 1, IN := #axisData.Internal.Control.ForceCommand.compareMode, MX := 2);
+	      #statConditionValue := #axisData.Internal.Control.ForceCommand.conditionValue;
+	      
+	      IF #statForceCommand.velocityLimitingValue <> 0.0 THEN
+	        #statForceCommand.velocityLimitingValue := ABS(#statForceCommand.velocityLimitingValue);
+	      ELSE
+	        #statForceCommand.velocityLimitingValue := 1.0E+12;
+	      END_IF;
+	      
+	      #axisData.Internal.MotionData.ForceCmdTracking.CommandID := #axisData.Internal.Control.ForceCommand.commandID;
+	      #axisData.Internal.Control.ForceCommand.commandID := 0;
+	      #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_BUFFERED_OR_MOTION;
+	      
+	      IF #statForceCommand.mode = 0 THEN  // disable
+	        IF #axisData.Internal.Control.ExecuteForceLimiting THEN
+	          #axisData.Internal.MotionData.ForceLimited := FALSE;
+	        ELSIF #axisData.Internal.Control.ExecuteForceControl THEN
+	          #axisData.Internal.MotionData.ForceControlled := FALSE;
+	        END_IF;
+	        #statForceConditionActive := FALSE;
+	        #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_EXECUTED;
+	      ELSIF #statForceCommand.mode = 1 THEN // enable immediately
+	        IF #statForceCommand.forceProfileMode = 0 THEN // by value
+	          #axisData.StatusForceProfile.Active := FALSE;
+	          #axisData.StatusForceProfile.State := 0;
+	          
+	        ELSE /// by profile
+	          #statForceProfileTime := 0.0;
+	          #statInProfileOld := FALSE;
+	          #axisData.StatusForceProfile.Active := TRUE;
+	          
+	          #axisData.StatusForceProfile.State := 1;
+	        END_IF;
+	        #axisData.StatusForceProfile.ForceProfileMode := #statForceCommand.forceProfileMode;
+	        #axisData.StatusForce.TargetForce := LIMIT_LREAL(MN := - #axisData.ForceLimits.MaxForce, IN := #statForceCommand.forceValue, MX := #axisData.ForceLimits.MaxForce);
+	        #axisData.StatusForce.ForceDerivedValue := MIN(IN1 := ABS(#statForceCommand.forceRamp), IN2 := ABS(#axisData.ForceLimits.MaxForceRamp));
+	        #statVelocityLimitingValueNorm := #statForceCommand.velocityLimitingValue/#statIntVelocityFactor;
+	        
+	        #statForceConditionActive := FALSE;
+	        IF #axisData.Internal.Control.ExecuteForceControl THEN
+	          #axisData.Internal.MotionData.ForceControlled := TRUE;
+	        ELSIF #axisData.Internal.Control.ExecuteForceLimiting THEN
+	          #axisData.Internal.MotionData.ForceLimited := TRUE;
+	        END_IF;
+	        
+	      ELSIF #statForceCommand.mode = 2 THEN  // by condition
+	        IF #statConditionMode = 1 THEN
+	          #statCompareMode := 1;
+	          #statConditionTime := 0.0;
+	        END_IF;
+	        #statForceConditionActive := TRUE;
+	        #statForceCtrlCondition := #axisData.Internal.Control.ExecuteForceControl;
+	      END_IF;
+	      
+	    END_IF;
+	    
+	    // check condition
+	    IF #statForceConditionActive THEN
+	      IF #statInternalStop THEN
+	        #statForceConditionActive := FALSE;
+	        #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_ABORTED;
+	      ELSE
+	        CASE #statConditionMode OF
+	          1:
+	            // based on time
+	            #tempCompareValue := #statConditionTime;
+	            #statConditionTime += #statSampleTime;
+	          2:
+	            // based on position
+	            #tempCompareValue := #statActualNorm.Position;
+	          3:
+	            // based on force
+	            #tempCompareValue := #axisData.ActualForce;
+	        END_CASE;
+	        IF #statCompareMode = 1 AND #tempCompareValue >= #statConditionValue //GE
+	          OR
+	          #statCompareMode = 2 AND #tempCompareValue < #statConditionValue //LS
+	        THEN
+	          IF #axisData.StatusForceProfile.ForceProfileMode = 0 THEN // by value
+	            #axisData.StatusForceProfile.Active := FALSE;
+	            #axisData.StatusForceProfile.State := 0;
+	          ELSE
+	            #statForceProfileTime := 0.0;
+	            #statInProfileOld := FALSE;
+	            #axisData.StatusForceProfile.Active := TRUE;
+	            #axisData.StatusForceProfile.State := 1;
+	            
+	          END_IF;
+	          IF #statForceCtrlCondition AND NOT #statInternalStop THEN
+	            #axisData.Internal.MotionData.ForceControlled := TRUE;
+	          ELSIF NOT #axisData.Internal.MotionData.ForceControlled THEN
+	            #axisData.Internal.MotionData.ForceLimited := TRUE;
+	          END_IF;
+	          #axisData.StatusForceProfile.ForceProfileMode := #statForceCommand.forceProfileMode;
+	          #axisData.StatusForce.TargetForce := LIMIT_LREAL(MN := - #axisData.ForceLimits.MaxForce, IN := #statForceCommand.forceValue, MX := #axisData.ForceLimits.MaxForce);
+	          #axisData.StatusForce.ForceDerivedValue := MIN(IN1 := ABS(#statForceCommand.forceRamp), IN2 := ABS(#axisData.ForceLimits.MaxForceRamp));
+	          #statVelocityLimitingValueNorm := #statForceCommand.velocityLimitingValue/#statIntVelocityFactor;
+	          
+	          #statForceConditionActive := FALSE;
+	        END_IF;
+	      END_IF;
+	    END_IF;
+	    
+	  END_IF;
+	  #axisData.Internal.Control.ExecuteForceLimiting := FALSE;
+	  #axisData.Internal.Control.ExecuteForceControl := FALSE;
+	  
+	  // force profie
+	  IF #axisData.Internal.MotionData.ForceControlled OR
+	    #axisData.Internal.MotionData.ForceLimited THEN
+	    IF #axisData.StatusForceProfile.Active THEN
+	      IF #axisData.StatusForceProfile.ForceProfileMode = 1 THEN
+	        #axisData.StatusForceProfile.BaseValue := #statForceProfileTime;
+	        #statForceProfileTime += #statSampleTime;
+	      ELSIF #axisData.StatusForceProfile.ForceProfileMode = 2 THEN
+	        #axisData.StatusForceProfile.BaseValue := #statActualNorm.Position;
+	      END_IF;
+	      ///////        
+	      IF #axisData.StatusForceProfile.ActualProfile > 0 THEN
+	        #statForceProfileDB := UINT_TO_DB_ANY(#axisData.StatusForceProfile.ActualProfile);
+	        #tempForceProfileVar := DB_ANY_TO_VARIANT(in := #statForceProfileDB, err => #statErrorVariant);
+	        IF #statErrorVariant = 0 THEN
+	          #tempRefToForceProfile ?= #tempForceProfileVar;
+	          
+	          IF TypeOf(#tempForceProfileVar) <> LSimaHydTO_typeProfile THEN
+	            #statErrorVariant := 8200;
+	          END_IF;
+	        END_IF;
+	        IF #statErrorVariant <> 0 THEN
+	          #axisData.StatusForceProfile.ActualProfile := 0;
+	          #statErrInternal := TRUE;
+	          #axisData.ErrorWord.%X2 := TRUE;
+	          #axisData.ErrorDetail.Reaction := #ERROR_REACTION_QUICK_STOP; // stopping with max dynamics
+	          #axisData.ErrorDetail.Number := #ALARM_FORCE_PROFILE_DB;
+	          
+	        ELSE
+	          // check consinsesty of profile
+	          IF #tempRefToForceProfile^.MaxIdx < 1 THEN
+	            #statErrInternal := TRUE;
+	            #axisData.StatusForceProfile.ActualProfile := 0;
+	            #axisData.ErrorWord.%X2 := TRUE;
+	            #axisData.ErrorDetail.Reaction := #ERROR_REACTION_QUICK_STOP; // stopping with max dynamics
+	            #axisData.ErrorDetail.Number := #ALARM_FORCE_PROFILE_CONFIGURATION;
+	          END_IF;
+	        END_IF;
+	      ELSE
+	        #axisData.StatusForceProfile.ActualProfile := 0;
+	      END_IF;
+	      
+	      //////
+	      IF #axisData.StatusForceProfile.ActualProfile > 0 THEN
+	        #axisData.StatusForceProfile.ProfileValue := "LSimaHydTO_Profile"(inputValue := #axisData.StatusForceProfile.BaseValue,
+	                                                                        inProfile => #tempInProfile,
+	                                                                        profile := #tempRefToForceProfile^);
+	        
+	        #axisData.StatusForce.TargetForce := LIMIT_LREAL(MN := - #axisData.ForceLimits.MaxForce,
+	                                                         IN := #axisData.StatusForceProfile.ProfileValue,
+	                                                         MX := #axisData.ForceLimits.MaxForce);
+	      ELSE
+	        #axisData.StatusForceProfile.State := 0;
+	        #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_ABORTED;
+	        #axisData.StatusForceProfile.Active := FALSE;
+	        #tempInProfile := FALSE;
+	      END_IF;
+	      
+	      IF #tempInProfile THEN
+	        #axisData.StatusForceProfile.State := 2;
+	      ELSIF #statInProfileOld THEN
+	        #axisData.StatusForceProfile.State := 3;
+	        #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_EXECUTED;
+	        #axisData.StatusForceProfile.Active := FALSE;
+	      END_IF;
+	      #statInProfileOld := #tempInProfile;
+	    ELSIF #axisData.StatusForceProfile.ForceProfileMode = 0
+	      AND (#axisData.Internal.MotionData.ForceCmdTracking.State AND #MOTION_STATE_BUFFERED_OR_MOTION) <> 0
+	    THEN // by value
+	      IF #axisData.Force = #axisData.StatusForce.TargetForce THEN
+	        #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_EXECUTED;
+	      END_IF;
+	    END_IF;
+	  END_IF;
+	  
+	  #instMC_VELOCITY_Zero_ForceCtrl(Axis := #axisTO,
+	                                  Execute := #axisData.Internal.MotionData.ForceControlled AND #statAxisTOStatusWord.%X0,
+	                                  Velocity := 0.0,
+	                                  Acceleration := #statDynamicLimits.MaxAcceleration,
+	                                  Deceleration := #statDynamicLimits.MaxDeceleration,
+	                                  Jerk := 0.0,
+	                                  Direction := 0,
+	                                  Current := FALSE,
+	                                  PositionControlled := FALSE);
+	  
+	END_REGION
+	
+	#statEnable := #statAxisTOStatusWord.%X0;
+	#axisData.StatusActor.Enabled := #axisTO.StatusDrive.InOperation;
+	//
+	#tempStatusWordMasked := #statAxisTOStatusWord AND #STATUS_WORD_MASK_MOTION_CMD;
+	#statExecuteMovement := ((#tempStatusWordMasked XOR #statStatusWordMaskedOld) AND #tempStatusWordMasked) <> 0;
+	
+	#statStatusWordMaskedOld := #tempStatusWordMasked;
+	
+	// state machine
+	REGION stateMachine
+	  IF NOT #statEnable
+	    AND #statAxisStateNext <> #STATE_ERROR
+	  THEN
+	    #statAxisStateNext := #STATE_INACTIVE;
+	  ELSE
+	    #statInternalStop := #statClamping OR #axisData.ErrorDetail.Reaction = #ERROR_REACTION_QUICK_STOP;
+	    #statClamping := FALSE;
+	  END_IF;
+	  
+	  #statNumOfLoop := 0; // counter to avoid endless loop
+	  REPEAT
+	    IF #statAxisState > #STATE_INACTIVE AND #statAxisState <= #STATE_STOPPING
+	      AND #statNumOfLoop >= 3 THEN
+	      #statErrInternal := TRUE;
+	      #axisData.ErrorWord.%X0 := TRUE;
+	      #axisData.ErrorDetail.Reaction := #ERROR_REACTION_DISABLE;
+	      #axisData.ErrorDetail.Number := #ALARM_INTERNAL;
+	      #statAxisStateNext := #STATE_ERROR;
+	    END_IF;
+	    #statAxisState := #statAxisStateNext;
+	    
+	    CASE #statAxisState OF
+	      #STATE_INACTIVE:
+	        
+	        IF #statAxisState <> #statAxisStateOld THEN
+	          // init
+	          #statExecuteMovement := FALSE;
+	          #axisData.Internal.MotionData.PositionControlled := FALSE;
+	          
+	          #axisData.Internal.MotionData.ForceControlled := FALSE;
+	          #axisData.Internal.MotionData.ForceLimited := FALSE;
+	          #axisData.Internal.Control.DirectOutput.activate := FALSE;
+	          #axisData.StatusForceProfile.Active := FALSE;
+	          #axisData.StatusForce.InClamping := FALSE;
+	          #statForceConditionActive := FALSE;
+	          #statForceCtrlActive := FALSE;
+	        END_IF;
+	        IF (#axisData.Internal.Control.AckError OR #statAutoReset)
+	          AND (#axisData.ErrorDetail.Reaction > #NO_ERROR_REACTION OR #axisData.ErrorDetail.Reaction < #ERROR_REACTION_DISABLE)
+	        THEN
+	          #statAutoReset := FALSE;
+	          #axisData.ErrorWord := 16#0000;
+	          #axisData.ErrorDetail.Number := #NO_ALARM;
+	          #axisData.ErrorDetail.Reaction := #NO_ERROR_REACTION;
+	          #statErrInternal := FALSE;
+	          #statErrAddValue := 0;
+	          
+	        END_IF;
+	        
+	        IF #statEnable THEN
+	          IF #axisTO.PositionControl.EnableDSC THEN
+	            #axisData.ErrorWord.%X1 := TRUE;
+	            #axisData.ErrorDetail.Reaction := #ERROR_REACTION_DISABLE;
+	            #axisData.ErrorDetail.Number := #ALARM_TO_CONFIGURATION_DSC;
+	          ELSE
+	            #axisData.Internal.MotionData.PositionControlled := NOT #statAxisTOStatusWord.%X28;
+	            #statAxisStateNext := #STATE_STANDSTILL;
+	          END_IF;
+	          
+	        END_IF;
+	        
+	        IF #axisData.ErrorDetail.Reaction >= #ERROR_REACTION_DISABLE
+	        THEN
+	          IF (#axisData.Internal.MotionData.ForceCmdTracking.State AND #MOTION_STATE_BUFFERED_OR_MOTION) <> 0 THEN
+	            #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_ERROR;
+	          END_IF;
+	          
+	          #statAxisStateNext := #STATE_ERROR;
+	        END_IF;
+	        
+	      #STATE_STANDSTILL:
+	        
+	        IF #statAxisState <> #statAxisStateOld THEN
+	          #axisData.Internal.MotionData.ForceControlled := FALSE;
+	          #axisData.Internal.Control.DirectOutput.activate := FALSE;
+	        END_IF;
+	        #axisData.Internal.MotionData.PositionControlled := NOT #statAxisTOStatusWord.%X28;
+	        
+	        IF (#axisData.Internal.Control.AckError OR #statAutoReset)
+	          AND (#axisData.ErrorDetail.Reaction > #NO_ERROR_REACTION OR #axisData.ErrorDetail.Reaction < #ERROR_REACTION_DISABLE)
+	        THEN
+	          #statAutoReset := FALSE;
+	          #axisData.ErrorWord := 16#0000;
+	          #axisData.ErrorDetail.Number := #NO_ALARM;
+	          #axisData.ErrorDetail.Reaction := #NO_ERROR_REACTION;
+	          #statErrInternal := FALSE;
+	          #statErrAddValue := 0;
+	          
+	        END_IF;
+	        
+	        IF #statEnable AND NOT #statInternalStop THEN
+	          IF #statExecuteMovement
+	          THEN
+	            #statAxisStateNext := #STATE_MOTION;
+	          END_IF;
+	          IF #axisData.Internal.MotionData.ForceControlled THEN
+	            #statAxisStateNext := #STATE_FORCE_CONTROL;
+	          END_IF;
+	          IF #axisData.Internal.Control.DirectOutput.activate THEN
+	            #statAxisStateNext := #STATE_MANUAL_OUT_CTRL;
+	          END_IF;
+	        END_IF;
+	        IF #axisData.ErrorDetail.Reaction >= #ERROR_REACTION_DISABLE THEN
+	          IF (#axisData.Internal.MotionData.ForceCmdTracking.State AND #MOTION_STATE_BUFFERED_OR_MOTION) <> 0 THEN
+	            #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_ERROR;
+	          END_IF;
+	          #statAxisStateNext := #STATE_ERROR;
+	        END_IF;
+	        
+	        
+	      #STATE_MANUAL_OUT_CTRL:
+	        IF #statAxisState <> #statAxisStateOld THEN
+	          #axisData.Internal.MotionData.ForceControlled := FALSE;
+	          #axisData.Internal.MotionData.ForceLimited := FALSE;
+	        END_IF;
+	        
+	        IF (NOT (#axisData.Internal.Control.DirectOutput.activate OR #axisData.Internal.MotionData.DirectOutput.active)) OR #statInternalStop THEN
+	          #statAxisStateNext := #STATE_STANDSTILL;
+	        END_IF;
+	        
+	        IF #axisData.ErrorDetail.Reaction >= #ERROR_REACTION_DISABLE THEN
+	          #statAxisStateNext := #STATE_ERROR;
+	        END_IF;
+	        
+	        IF #statExecuteMovement THEN
+	          #axisData.Internal.MotionData.PositionControlled := FALSE;
+	          #tempAbortMovement := TRUE;
+	        END_IF;
+	        
+	        IF #statAxisState <> #statAxisStateNext THEN
+	          // leave state
+	          #axisData.Internal.Control.DirectOutput.activate := FALSE;
+	          #axisData.Internal.Control.DirectOutput.jogForward := FALSE;
+	          #axisData.Internal.Control.DirectOutput.jogBackward := FALSE;
+	          
+	        END_IF;
+	        
+	      #STATE_MOTION:
+	        
+	        IF #statAxisState <> #statAxisStateOld THEN
+	          #axisData.Internal.MotionData.ForceControlled := FALSE;
+	        END_IF;
+	        
+	        #axisData.Internal.MotionData.PositionControlled := NOT #statAxisTOStatusWord.%X28;
+	        
+	        IF #statAxisTOStatusWord.%X6 OR #axisData.ErrorDetail.Reaction = 1 THEN
+	          #statAxisStateNext := #STATE_STANDSTILL;
+	        END_IF;
+	        IF #axisData.Internal.MotionData.ForceControlled THEN
+	          #statAxisStateNext := #STATE_FORCE_CONTROL;
+	        END_IF;
+	        IF #statInternalStop THEN
+	          #statAxisStateNext := #STATE_STOPPING;
+	          #instMC_HALT(Axis := #axisTO,
+	                            Execute := FALSE,
+	                            Deceleration := #statDynamicLimits.MaxDeceleration,
+	                            Jerk := 0.0,
+	                            AbortAcceleration := TRUE);
+	          
+	        END_IF;
+	        
+	        IF #axisData.ErrorDetail.Reaction >= #ERROR_REACTION_DISABLE THEN
+	          
+	          #statAxisStateNext := #STATE_ERROR;
+	        END_IF;
+	        
+	      #STATE_FORCE_CONTROL:
+	        
+	        IF #statAxisState <> #statAxisStateOld THEN
+	          #axisData.Internal.MotionData.PositionControlled := FALSE;
+	        END_IF;
+	        IF (*#statExecuteMovement OR*)NOT #instMC_VELOCITY_Zero_ForceCtrl.Busy THEN
+	          #statAxisStateNext := #STATE_MOTION;
+	        ELSIF NOT #axisData.Internal.MotionData.ForceControlled THEN
+	          #statAxisStateNext := #STATE_STOPPING;
+	          #instMC_HALT(Axis := #axisTO,
+	                            Execute := FALSE,
+	                            Deceleration := #statDynamicLimits.MaxDeceleration,
+	                            Jerk := 0.0,
+	                            AbortAcceleration := TRUE);
+	          
+	        END_IF;
+	        IF #axisData.ErrorDetail.Reaction >= #ERROR_REACTION_DISABLE THEN
+	          IF (#axisData.Internal.MotionData.ForceCmdTracking.State AND #MOTION_STATE_BUFFERED_OR_MOTION) <> 0 THEN
+	            #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_ERROR;
+	          END_IF;
+	          
+	          #statAxisStateNext := #STATE_ERROR;
+	        END_IF;
+	        IF #statAxisState <> #statAxisStateNext THEN
+	          // leave state
+	          #axisData.Internal.MotionData.ForceControlled := FALSE;
+	          #axisData.StatusForceProfile.Active := FALSE;
+	          #statForceConditionActive := FALSE;
+	          IF (#axisData.Internal.MotionData.ForceCmdTracking.State AND #MOTION_STATE_BUFFERED_OR_MOTION) <> 0 THEN
+	            #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_ABORTED;
+	          END_IF;
+	        END_IF;
+	        
+	      #STATE_STOPPING:
+	        
+	        IF #statAxisState <> #statAxisStateOld THEN
+	          // init
+	          #axisData.Internal.MotionData.ForceControlled := FALSE;
+	          
+	        END_IF;
+	        #axisData.Internal.MotionData.PositionControlled := NOT #statAxisTOStatusWord.%X28;
+	        
+	        IF #statExecuteMovement THEN
+	          #statAxisStateNext := #STATE_MOTION;
+	        ELSE
+	          
+	          #instMC_HALT(Axis := #axisTO,
+	                            Execute := TRUE,
+	                            Deceleration := #statDynamicLimits.MaxDeceleration,
+	                            Jerk := 0.0,
+	                            AbortAcceleration := TRUE);
+	          
+	          IF NOT #instMC_HALT.Busy THEN  // TO DO MC_Halt.done
+	            #statAxisStateNext := #STATE_STANDSTILL;
+	          END_IF;
+	        END_IF;
+	        
+	        IF #axisData.ErrorDetail.Reaction >= #ERROR_REACTION_DISABLE THEN
+	          #statAxisStateNext := #STATE_ERROR;
+	        END_IF;
+	        
+	      #STATE_ERROR:
+	        
+	        IF #statAxisState <> #statAxisStateOld THEN
+	          // init
+	          #axisData.Internal.MotionData.ForceControlled := FALSE;
+	          #axisData.Internal.MotionData.ForceLimited := FALSE;
+	          
+	          IF #axisData.ErrorDetail.Reaction >= #ERROR_REACTION_DISABLE
+	          THEN
+	            #axisData.Internal.MotionData.PositionControlled := FALSE;
+	            #tempAbortMovement := TRUE;
+	            #statEnable := FALSE;
+	            #axisData.StatusActor.SetPoint := 0.0;
+	          END_IF;
+	        END_IF;
+	        
+	        IF #statExecuteMovement THEN
+	          #axisData.Internal.MotionData.ForceControlled := FALSE;
+	          #tempAbortMovement := TRUE;
+	        END_IF;
+	        
+	        
+	        IF (#axisData.Internal.Control.AckError OR #statAutoReset) THEN
+	          #statAutoReset := FALSE;
+	          #axisData.ErrorWord := 16#0000;
+	          #axisData.ErrorDetail.Number := #NO_ALARM;
+	          #axisData.ErrorDetail.Reaction := #NO_ERROR_REACTION;
+	          #statErrInternal := FALSE;
+	          #statErrAddValue := 0;
+	          
+	          IF #statEnable THEN
+	            #statAxisStateNext := #STATE_STANDSTILL;
+	          ELSE
+	            #statAxisStateNext := #STATE_INACTIVE;
+	          END_IF;
+	          
+	        END_IF;
+	    END_CASE;
+	    #statAxisStateOld := #statAxisState;
+	    
+	    #statNumOfLoop := #statNumOfLoop + 1;
+	  UNTIL (#statAxisState = #statAxisStateNext)
+	    OR #statNumOfLoop > 3
+	  END_REPEAT;
+	  
+	  
+	END_REGION
+	REGION directionValves
+	  
+	  IF #axisData.Internal.MotionData.ForceControlled THEN
+	    #statReqForward := (#axisData.StatusForce.TargetForce > 0.0) XOR #axisData.Actor.DirectionValves.DisplacementForce XOR #axisData.ForceControl.InvertSetpoint;
+	    #statReqBackward := NOT #statReqForward;
+	  ELSE
+	    #statReqForward := #statCommandNorm.Velocity > 0.0;
+	    #statReqBackward := #statCommandNorm.Velocity < 0.0;
+	  END_IF;
+	  
+	  #instValvesControl(enable := #statEnable,
+	                     reqForward := #statReqForward OR #axisData.Internal.Control.RequestForward,
+	                     reqBackward := #statReqBackward OR #axisData.Internal.Control.RequestBackward,
+	                     sampleTime := #statSampleTime,
+	                     rampingForward => #statRampingForward,
+	                     rampingBackward => #statRampingBackward,
+	                     axisData := #axisData);
+	  #axisData.Internal.MotionData.RampingForward := #statRampingForward;
+	  #axisData.Internal.MotionData.RampingBackward := #statRampingBackward;
+	  
+	END_REGION
+	
+	REGION evaluteVChar
+	  IF #axisData.ValveCharacteristic.DB_NUMBER > 0 THEN
+	    #statVCharDB := UINT_TO_DB_ANY(#axisData.ValveCharacteristic.DB_NUMBER);
+	    #tempVCharVar := DB_ANY_TO_VARIANT(in := #statVCharDB, err => #statErrorVariant);
+	    IF #statErrorVariant = 0 THEN
+	      #tempRefToVChar ?= #tempVCharVar;
+	      
+	      IF TypeOf(#tempVCharVar) <> LSimaHydTO_typeVCharData THEN
+	        #statErrorVariant := 8200;
+	      END_IF;
+	    END_IF;
+	    IF #statErrorVariant <> 0 THEN
+	      #axisData.StatusVChar.ActualVChar := 0;
+	      #statErrInternal := TRUE;
+	      #axisData.ErrorWord.%X1 := TRUE;
+	      #axisData.ErrorDetail.Reaction := #ERROR_REACTION_QUICK_STOP; // stopping with max dynamics
+	      #axisData.ErrorDetail.Number := #ALARM_VALVE_PROFILE_DB;
+	      "LSimaHydTO_Internal_1"(#tempVCharVar);
+	      
+	    ELSE
+	      // check consinsesty of VChar
+	      IF #tempRefToVChar^.MaxIdx < 1 OR #tempRefToVChar^.VelocityLimitPositive <= #tempRefToVChar^.VelocityLimitNegative THEN
+	        #statErrInternal := TRUE;
+	        #axisData.StatusVChar.ActualVChar := 0;
+	        #axisData.ErrorWord.%X1 := TRUE;
+	        #axisData.ErrorDetail.Reaction := #ERROR_REACTION_QUICK_STOP; // stopping with max dynamics
+	        #axisData.ErrorDetail.Number := #ALARM_VALVE_PROFILE_CONFIGURATION;
+	      ELSE
+	        #axisData.StatusVChar.ActualVChar := #axisData.ValveCharacteristic.DB_NUMBER;
+	        #statCtrlOutUppLimit := #tempRefToVChar^.VelocityLimitPositive/#statIntVelocityFactor;
+	        #statCtrlOutLowLimit := #tempRefToVChar^.VelocityLimitNegative/#statIntVelocityFactor;
+	      END_IF;
+	    END_IF;
+	  ELSE
+	    #axisData.StatusVChar.ActualVChar := 0;
+	  END_IF;
+	  
+	  IF #axisData.StatusVChar.ActualVChar = 0 THEN
+	      #statCtrlOutUppLimit := #statDynamicLimits.MaxVelocity;
+	      #statCtrlOutLowLimit := - #statDynamicLimits.MaxVelocity;
+	  ELSE
+	      #statCtrlOutUppLimit := #tempRefToVChar^.VelocityLimitPositive/#statIntVelocityFactor;
+	      #statCtrlOutLowLimit := #tempRefToVChar^.VelocityLimitNegative/#statIntVelocityFactor;
+	  END_IF;
+	END_REGION
+	
+	REGION forceControl
+	  
+	  IF #axisData.Internal.MotionData.ForceControlled OR
+	    #axisData.Internal.MotionData.ForceLimited THEN
+	    
+	    IF #axisData.Internal.MotionData.ForceControlled AND NOT #statForceCtrlOld THEN
+	      #axisData.Internal.MotionData.ForceLimited := FALSE;
+	      #axisData.Internal.MotionData.PositionControlled := FALSE;
+	      #statForceCtrlActive := TRUE;
+	      IF #axisData.Internal.Control.ForceCommand.velocityLimitingValue <> 0.0 THEN
+	          #statVelocityLimitingValueNorm := ABS(#axisData.Internal.Control.ForceCommand.velocityLimitingValue)/#statIntVelocityFactor;
+	      ELSE
+	        #statVelocityLimitingValueNorm := 1.0E+12;
+	      END_IF;
+	      
+	      #instBalanceForce(sampleTime := #statSampleTime,
+	                        timeConstant := #axisData.DynamicAxisModel.ForceTimeConstant,
+	                        enable := FALSE,
+	                        inputValue := #axisData.Force,
+	                        outputValue => #axisData.StatusForce.BalancedForce);
+	      
+	      #instForceController(reset := TRUE);
+	      IF #axisData.ForceControl.SmoothSwitching THEN
+	        // smooth switch T.F. mode
+	        IF #axisData.ForceControl.ProportionalGain > 0.0 THEN
+	          #axisData.Force :=
+	          #axisData.StatusActor.SetPoint
+	          * SEL(G := #axisData.ForceControl.InvertSetpoint, IN0 := 1.0, IN1 := -1.0) / #axisData.ForceControl.ProportionalGain
+	          + #axisData.ActualForce;
+	          
+	        ELSE
+	          #axisData.Force := #axisData.ActualForce;
+	        END_IF;
+	        
+	        #instForceController.iOutputInitValue := 0.0;
+	      ELSE
+	        #instForceController.iOutputInitValue := 0.0;
+	        #axisData.Force := #axisData.ActualForce;
+	      END_IF;
+	      #statForceCtrCmdValueOld := #axisData.Force;
+	    ELSIF (#axisData.Internal.MotionData.ForceLimited AND NOT #statForceLimOld) THEN
+	      //init part
+	      
+	      #statForceCtrCmdValueOld := #axisData.Force := #axisData.StatusForce.TargetForce;
+	      
+	      
+	      #instBalanceForce(sampleTime := #statSampleTime,
+	                        timeConstant := #axisData.DynamicAxisModel.ForceTimeConstant,
+	                        enable := FALSE,
+	                        inputValue := #axisData.Force,
+	                        outputValue => #axisData.StatusForce.BalancedForce);
+	      
+	      #instForceController(reset := TRUE);
+	      #statForceCtrlActive := TRUE;
+	      #statForceLimitation := FALSE;
+	      #statVelocityLimitingValueNorm := 1.0E+12;
+	      #instForceController.iOutputInitValue := 0.0;
+	      #statForceLimIntPos := 0.0;
+	    END_IF;
+	    
+	    "LSimaHydTO_RampGen"(acceleration := #axisData.StatusForce.ForceDerivedValue,
+	                       inputValue := #axisData.StatusForce.TargetForce,
+	                       deceleration := #axisData.StatusForce.ForceDerivedValue,
+	                       sampleTime := #statSampleTime,
+	                       active => #tempRampGenActive,
+	                       outputValue := #axisData.Force);
+	    
+	    IF #tempRampGenActive AND #axisData.ForceControl.PreControl > 0.0 AND
+	      #axisData.ForceControl.Stiffness > 0.0 AND
+	      (#statForceLimitation OR #axisData.Internal.MotionData.ForceControlled)
+	    THEN
+	      #axisData.StatusForce.PreControlValue := #axisData.ForceControl.PreControl * (#axisData.Force - #statForceCtrCmdValueOld) /
+	      (#statSampleTime * #axisData.ForceControl.Stiffness);
+	    ELSE
+	      #axisData.StatusForce.PreControlValue := 0.0;
+	    END_IF;
+	    #statForceCtrCmdValueOld := #axisData.Force;
+	    
+	    #instBalanceForce(sampleTime := #statSampleTime,
+	                      timeConstant := #axisData.DynamicAxisModel.ForceTimeConstant,
+	                      enable := (#axisData.DynamicAxisModel.VelocityTimeConstant > 0.0) AND (#axisData.ForceControl.PreControl <> 0.0),
+	                      inputValue := #axisData.Force,
+	                      outputValue => #axisData.StatusForce.BalancedForce);
+	    
+	    #axisData.StatusForce.ControlDifference := #axisData.StatusForce.BalancedForce - #axisData.ActualForce;
+	    #instForceController(reset := NOT #statEnable,
+	                         antiWindUp := NOT (#statForceLimitation OR #axisData.Internal.MotionData.ForceControlled),
+	                         preControlCmdValue := 0.0,
+	                         setpointValue := #axisData.StatusForce.BalancedForce,
+	                         actualValue := #axisData.ActualForce,
+	                         preControl := 0.0,
+	                         proportionalGain := #axisData.ForceControl.ProportionalGain,
+	                         integralTime := #axisData.ForceControl.IntegralTime,
+	                         derivativeTime := #axisData.ForceControl.DerivativeTime,
+	                         decayTime := #axisData.ForceControl.DecayTime,
+	                         smoothingTimeByChangeDifference := 0.0,
+	                         iOutputInitValue := 0.0,
+	                         iPartUppLimit := SEL(G := #axisData.Internal.MotionData.ForceLimited AND #axisData.StatusForce.BalancedForce > 0.0, IN0 := 1.0e12, IN1 := 0.0),
+	                         iPartLowLimit := SEL(G := #axisData.Internal.MotionData.ForceLimited AND #axisData.StatusForce.BalancedForce < 0.0, IN0 := -1.0e12, IN1 := 0.0),
+	                         outUppLimit := MIN(IN1 := #statCtrlOutUppLimit, IN2 := #statVelocityLimitingValueNorm, IN3 := #axisData.ForceControl.OutputUppLimit),
+	                         outLowLimit := MAX(IN1 := #statCtrlOutLowLimit, IN2 := - #statVelocityLimitingValueNorm, IN3 := #axisData.ForceControl.OutputLowLimit),
+	                         sampleTime := #statSampleTime,
+	                         outputValue => #axisData.StatusForce.ControlOutput,
+	                         active => #statForceCtrlActive);
+	    
+	    #statForceCtrlSetPointNorm := #axisData.StatusForce.ControlOutput + #axisData.StatusForce.PreControlValue;
+	    IF #axisData.ForceControl.InvertSetpoint THEN
+	      #statForceCtrlSetPointNorm := - #statForceCtrlSetPointNorm;
+	    END_IF;
+	    #statForceDirPos := (#axisData.StatusForce.BalancedForce > 0.0) XOR #axisData.ForceControl.InvertSetpoint;
+	    
+	    
+	  ELSIF (#statForceCtrlOld OR #statForceLimOld) THEN
+	    //swith off force controller
+	    #statForceCtrlSetPointNorm := 0.0;
+	    #statForceLimitingVelNorm := 0.0;
+	    #statForceLimitation := FALSE;
+	    
+	    
+	    #axisData.StatusForce.InClamping := FALSE;
+	    #axisData.StatusForce.TargetForce := 0.0;
+	    #axisData.StatusForce.ForceDerivedValue := 0.0;
+	    #axisData.StatusForce.PreControlValue := 0.0;
+	    #axisData.StatusForce.BalancedForce := 0.0;
+	    #axisData.StatusForce.ControlDifference := 0.0;
+	    #axisData.StatusForce.ControlOutput := 0.0;
+	    #axisData.Force := #axisData.ActualForce;
+	    #instForceController(reset := TRUE);
+	    #statForceCtrlActive := FALSE;
+	    
+	    #axisData.StatusForceProfile.Active := FALSE;
+	    #axisData.StatusForceProfile.BaseValue := 0.0;
+	    #axisData.StatusForceProfile.ProfileValue := 0.0;
+	    #axisData.StatusForceProfile.ActualProfile := 0;
+	    #axisData.StatusForceProfile.Active := FALSE;
+	    #axisData.StatusForceProfile.State := 0;
+	    #axisData.StatusForceProfile.ForceProfileMode := 0;
+	    
+	    IF #axisData.Internal.MotionData.ForceCmdTracking.State = #MOTION_STATE_BUFFERED_OR_MOTION THEN
+	      #axisData.Internal.MotionData.ForceCmdTracking.State := #MOTION_STATE_ABORTED;
+	    END_IF;
+	  ELSE
+	    #axisData.Force := #axisData.ActualForce;
+	  END_IF;
+	END_REGION
+	
+	REGION positionControl
+	  
+	  IF NOT #axisData.Internal.MotionData.PositionControlled THEN
+	    // without position controller/ open loop
+	    
+	    IF #axisData.Internal.MotionData.ForceLimited AND
+	      #statForceCtrlActive AND (#statForceDirPos XOR #statForceCtrlSetPointNorm > 0.0)
+	    THEN
+	      #statForceLimitingVelNorm := #statForceCtrlSetPointNorm;
+	      #statForceLimitation := TRUE;
+	      IF #axisData.Internal.Control.ForceCommand.clampingMonitoring
+	        AND (#statAxisState = #STATE_MOTION)
+	        AND NOT #axisData.StatusForce.InClamping
+	      THEN
+	        #statClamping := TRUE;
+	      END_IF;
+	    ELSE
+	      #statForceLimitingVelNorm := 0.0;
+	      #statForceLimitation := FALSE;
+	      #axisData.StatusForce.InClamping := FALSE;
+	    END_IF;
+	    #statMotionSetPointNorm := #statCommandNorm.Velocity + #statForceLimitingVelNorm;
+	    
+	    #axisData.StatusServo.ControlDifference := 0.0;
+	    #statCmdPosOld := #statCommandNorm.Position;
+	    #statForceLimIntPos := 0.0;
+	    
+	  ELSE
+	    // position controller section
+	    IF NOT #statPosCtrlOld THEN
+	      #statForceLimIntPos := 0.0;
+	      #instBalancePos(sampleTime := #statSampleTime,
+	                      timeConstant := #axisData.DynamicAxisModel.VelocityTimeConstant,
+	                      enable := FALSE,
+	                      inputValue := #statCommandNorm.Position,
+	                      outputValue => #axisData.StatusServo.BalancedPosition);
+	      
+	    END_IF;
+	    
+	    IF #axisData.Internal.MotionData.ForceLimited AND
+	      #statForceCtrlActive
+	    THEN
+	      
+	      IF ((#statForceDirPos XOR #statForceCtrlSetPointNorm > 0.0))
+	        
+	      THEN
+	        #statForceLimitingVelNorm := #statForceCtrlSetPointNorm;
+	        #statForceLimitation := TRUE;
+	        #statForceLimIntPos := #statForceLimIntPos + #statForceLimitingVelNorm * #statSampleTime;
+	        #statForceLimPosCmd := #statCmdPosOld + (#statForceLimitingVelNorm + #statCommandNorm.Velocity) * #statSampleTime;
+	        
+	        
+	        IF #axisData.Internal.PositionLimits_SW.Active AND #statAxisTOStatusWord.%X5 THEN
+	          IF #statForceLimPosCmd >= #axisData.Internal.PositionLimits_SW.MaxPosition THEN
+	            #statForceLimPosCmd := #axisData.Internal.PositionLimits_SW.MaxPosition;
+	            #statForceLimIntPos := #statForceLimPosCmd - #statCommandNorm.Position;
+	          END_IF;
+	          IF #statForceLimPosCmd <= #axisData.Internal.PositionLimits_SW.MinPosition THEN
+	            #statForceLimPosCmd := #axisData.Internal.PositionLimits_SW.MinPosition;
+	            #statForceLimIntPos := #statForceLimPosCmd - #statCommandNorm.Position;
+	          END_IF;
+	        END_IF;
+	        
+	      ELSIF #statForceLimitation
+	      THEN
+	        
+	        #statForceLimitingVelNorm := #statForceCtrlSetPointNorm;
+	        #statForceLimIntPos := #statForceLimIntPos + #statForceLimitingVelNorm * #statSampleTime;
+	        #statForceLimPosCmd := #statCmdPosOld + (#statForceLimitingVelNorm + #statCommandNorm.Velocity) * #statSampleTime;
+	        
+	        IF #axisData.Internal.PositionLimits_SW.Active AND #statAxisTOStatusWord.%X5 THEN
+	          IF #statForceLimPosCmd >= #axisData.Internal.PositionLimits_SW.MaxPosition THEN
+	            #statForceLimPosCmd := #axisData.Internal.PositionLimits_SW.MaxPosition;
+	            #statForceLimIntPos := #statForceLimPosCmd - #statCommandNorm.Position;
+	          END_IF;
+	          IF #statForceLimPosCmd <= #axisData.Internal.PositionLimits_SW.MinPosition THEN
+	            #statForceLimPosCmd := #axisData.Internal.PositionLimits_SW.MinPosition;
+	            #statForceLimIntPos := #statForceLimPosCmd - #statCommandNorm.Position;
+	          END_IF;
+	        END_IF;
+	        
+	        IF #statForceDirPos XOR #statForceLimIntPos < 0.0 THEN
+	          #statForceLimitingVelNorm := 0.0;
+	          #statForceLimIntPos := 0.0;
+	          #statForceLimPosCmd := #statCommandNorm.Position;
+	          #statForceLimitation := FALSE;
+	          #axisData.StatusForce.InClamping := FALSE;
+	        END_IF;
+	        
+	      ELSE
+	        #statForceLimitingVelNorm := 0.0;
+	        #statForceLimIntPos := 0.0;
+	        #statForceLimPosCmd := #statCommandNorm.Position;
+	        #statForceLimitation := FALSE;
+	        #axisData.StatusForce.InClamping := FALSE;
+	      END_IF;
+	      IF #axisData.Internal.Control.ForceCommand.clampingMonitoring
+	        AND #statForceLimitation
+	        AND (#statAxisState = #STATE_MOTION)
+	        AND NOT #axisData.StatusForce.InClamping
+	      THEN
+	        IF ABS(#statCommandNorm.Position - #statActualNorm.Position) >
+	          ABS(#axisData.Internal.Control.ForceCommand.followingErrorDeviation)
+	        THEN
+	          #statClamping := TRUE;
+	        END_IF;
+	      END_IF;
+	      
+	      #instBalancePos.inputValue := #statForceLimPosCmd;
+	      #statCmdPosOld := #statForceLimPosCmd;
+	      
+	    ELSE
+	      #instBalancePos.inputValue := #statCommandNorm.Position;
+	      #statCmdPosOld := #statCommandNorm.Position;
+	    END_IF;
+	    
+	    #instBalancePos(sampleTime := #statSampleTime,
+	                    timeConstant := #axisData.DynamicAxisModel.VelocityTimeConstant,
+	                    enable := (#axisData.DynamicAxisModel.VelocityTimeConstant > 0.0) AND (#axisData.PositionControl.PreControl <> 0.0) AND #statHomingDoneOld = #statAxisTOStatusWord.%X5,
+	                    //inputValue := #statCommand.Position,
+	                    outputValue => #axisData.StatusServo.BalancedPosition);
+	    #statHomingDoneOld := #statAxisTOStatusWord.%X11;
+	    
+	    #axisData.StatusServo.ControlDifference := #axisData.StatusServo.BalancedPosition - #statActualNorm.Position;
+	    
+	    #instPositionController(reset := NOT #statEnable,
+	                            antiWindUp := #statForceLimitation,
+	                            preControlCmdValue := #statCommandNorm.Velocity,
+	                            setpointValue := #axisData.StatusServo.BalancedPosition,
+	                            actualValue := #statActualNorm.Position,
+	                            preControl := #axisData.PositionControl.PreControl,
+	                            proportionalGain := #axisData.PositionControl.ProportionalGain,
+	                            integralTime := #axisData.PositionControl.IntegralTime,
+	                            derivativeTime := #axisData.PositionControl.DerivativeTime,
+	                            decayTime := #axisData.PositionControl.DecayTime,
+	                            smoothingTimeByChangeDifference := #axisData.PositionControl.SmoothingTimeByChangeDifference,
+	                            outUppLimit := MIN(IN1 := #statCtrlOutUppLimit, IN2 := #axisData.PositionControl.OutputUppLimit),
+	                            outLowLimit := MAX(IN1 := #statCtrlOutLowLimit, IN2 := #axisData.PositionControl.OutputLowLimit),
+	                            sampleTime := #statSampleTime,
+	                            outputValue => #statMotionSetPointNorm);
+	    
+	    
+	    #statMotionSetPointNorm += #statForceLimitingVelNorm;
+	  END_IF;
+	END_REGION
+	
+	// save and restor TO monitoring
+	// 
+	IF #statForceLimitation AND NOT #statInLimitationOld THEN
+	  #statFolErMin := #axisTO.FollowingError.MinValue;
+	  #statFolErMax := #axisTO.FollowingError.MaxValue;
+	  #statPosWindow := #axisTO.PositioningMonitoring.Window;
+	  #axisTO.FollowingError.MaxValue := 1.0e12;
+	  #axisTO.FollowingError.MinValue := 1.0e12;
+	  #axisTO.PositioningMonitoring.Window := 1.0e12;
+	  
+	ELSIF NOT #statForceLimitation AND #statInLimitationOld THEN
+	  #axisTO.FollowingError.MinValue := #statFolErMin;
+	  #axisTO.FollowingError.MaxValue := #statFolErMax;
+	  #axisTO.PositioningMonitoring.Window := #statPosWindow;
+	  
+	END_IF;
+	#statInLimitationOld := #statForceLimitation;
+	
+	REGION actor
+	  IF NOT #axisData.Internal.Control.DirectOutput.activate THEN
+	    
+	    IF #statManEnableOld THEN
+	      #axisData.Internal.MotionData.DirectOutput.active := FALSE;
+	      #axisData.Internal.MotionData.DirectOutput.rampingDown := FALSE;
+	      IF #statManPosCtrlOld AND #statEnable THEN
+	        #axisData.Internal.MotionData.PositionControlled := #statManPosCtrlOld;
+	        #tempChangePosCtrl := TRUE;
+	      END_IF;
+	    END_IF;
+	    
+	    IF #statEnable THEN
+	      
+	      IF #axisData.Internal.MotionData.ForceControlled THEN
+	        
+	        #statCommandNorm := #statActualNorm;
+	        #axisData.StatusActor.SetPoint := (LIMIT(MN := - #statVelocityLimitingValueNorm,
+	                                                 IN := #statForceCtrlSetPointNorm,
+	                                                 MX := #statVelocityLimitingValueNorm) * #statIntVelocityFactor
+	                                            + #axisData.StatusActor.AddSetPoint);
+	      ELSE
+	        
+	          #axisData.StatusActor.SetPoint := (#statMotionSetPointNorm * #statIntVelocityFactor + #axisData.StatusActor.AddSetPoint);
+	      END_IF;
+	      
+	      IF #axisData.StatusVChar.ActualVChar > 0 THEN
+	        
+	        #statRetVCHar := "LSimaHydTO_Vchar"(setPoint := #axisData.StatusActor.SetPoint,
+	                                          VChar := #tempRefToVChar,
+	                                          qOutput := #statRetVCHar,
+	                                          forward := #axisData.StatusActor.ValveForward,
+	                                          backward := #axisData.StatusActor.ValveBackward);
+	      ELSE
+	        #statRetVCHar := "LSimaHydTO_Scale"(input := #axisData.StatusActor.SetPoint,
+	                                          inBegin := - #statMaxSetPoint,
+	                                          inEnd := #statMaxSetPoint,
+	                                          valBegin := - #statQOutMax, valEnd := #statQOutMax);
+	      END_IF;
+	      REGION smooth vchar change
+	        IF #axisData.ValveCharacteristic.SmoothChangeTime <= 0.0 THEN
+	          #tempSmoothingMode := 0;
+	        ELSE
+	          #tempSmoothingMode := #axisData.ValveCharacteristic.SmoothingMode + 1;
+	        END_IF;
+	        
+	        CASE #tempSmoothingMode OF
+	          0: // none
+	            #statQOutput := #statRetVCHar;
+	            
+	          1:// T1
+	            IF #statVCharOld <> #axisData.StatusVChar.ActualVChar
+	              OR #tempSmoothingMode <> #statSmoothingModeOld
+	            THEN
+	              
+	              #instVCharSmoothing(enable := FALSE,
+	                                  inputValue := 0.0,
+	                                  timeConstant := #axisData.ValveCharacteristic.SmoothChangeTime,
+	                                  sampleTime := #statSampleTime);
+	              
+	              #instVCharSmoothing(enable := TRUE,
+	                                  inputValue := #statRetVCHar - #statQOutputOld,
+	                                  timeConstant := #axisData.ValveCharacteristic.SmoothChangeTime,
+	                                  sampleTime := #statSampleTime);
+	            END_IF;
+	            #instVCharSmoothing(enable := #axisData.ValveCharacteristic.SmoothChangeTime > 0.0,
+	                                inputValue := 0.0,
+	                                timeConstant := #axisData.ValveCharacteristic.SmoothChangeTime,
+	                                sampleTime := #statSampleTime);
+	            
+	            #statQOutput := (#statRetVCHar - #instVCharSmoothing.outputValue);
+	          2..3://ramp
+	            IF #statVCharOld <> #axisData.StatusVChar.ActualVChar
+	              OR #tempSmoothingMode <> #statSmoothingModeOld
+	            THEN
+	              #statSmoothRampOut := #statRetVCHar - #statQOutputOld;
+	              IF #tempSmoothingMode = 2 THEN
+	                #statSmoothRamp := 100.0 / #axisData.ValveCharacteristic.SmoothChangeTime;
+	              ELSIF ABS(#statSmoothRampOut) > 0.0 THEN
+	                #statSmoothRamp := ABS(#statSmoothRampOut) / #axisData.ValveCharacteristic.SmoothChangeTime;
+	              ELSE
+	                #statSmoothRampOut := 0.0;
+	              END_IF;
+	            END_IF;
+	            "LSimaHydTO_RampGen"(acceleration := #statSmoothRamp,
+	                               inputValue := 0.0,
+	                               deceleration := #statSmoothRamp,
+	                               sampleTime := #statSampleTime,
+	                               active => #tempRampGenActive,
+	                               outputValue := #statSmoothRampOut);
+	            #statQOutput := (#statRetVCHar - #statSmoothRampOut);
+	        END_CASE;
+	        #statSmoothingModeOld := #tempSmoothingMode;
+	      END_REGION
+	   
+	    
+	    #statQOutputOld := #statQOutput;
+	  ELSE
+	    #axisData.StatusActor.SetPoint := 0.0;
+	    #statQOutput := #axisData.Actor.SubstituteValue;
+	  END_IF;
+	  
+	ELSE // manual output active
+	  IF NOT #statManEnableOld THEN
+	    #axisData.Internal.MotionData.DirectOutput.QOutputValue := 0.0;
+	    #statManPosCtrlOld := #axisData.Internal.MotionData.PositionControlled;
+	    #axisData.Internal.MotionData.PositionControlled := FALSE;
+	    #tempChangePosCtrl := TRUE;
+	    
+	  END_IF;
+	  
+	  IF #axisData.Internal.Control.DirectOutput.jogForward AND NOT #axisData.Internal.Control.DirectOutput.jogBackward
+	    AND #statRampingForward AND NOT #axisData.Internal.MotionData.DirectOutput.maxSafetyPositionOverrun THEN
+	    
+	    IF #axisData.Internal.PositionLimits_SW.Active THEN
+	      #tempManualSafetyDistance := #axisData.Internal.PositionLimits_SW.MaxPosition - #axisData.Internal.Control.DirectOutput.safetyDistance - #statActualNorm.Position;
+	      IF #statManOutDeceleration THEN
+	        #statElapsedDelayTime := LIMIT(MN := 0.0, IN := (#statElapsedDelayTime - #statSampleTime), MX := #axisData.DynamicAxisModel.VelocityTimeConstant);
+	        #statManRamp := 0.5 * ABS(#statActualNorm.Velocity * (#statQOutputMan - #axisData.Internal.Control.DirectOutput.offset)) /
+	        MAX(IN1 := 0.001, IN2 := ABS(#tempManualSafetyDistance - #statElapsedDelayTime * ABS(#statActualNorm.Velocity)));
+	        IF #axisData.Actor.MaxDerivative < #statManRamp THEN
+	          #statManRamp := #axisData.Actor.MaxDerivative;
+	        END_IF;
+	        
+	      ELSE
+	        #statManQOutput := #axisData.Internal.Control.DirectOutput.commandValueForward;
+	        IF #axisData.Internal.Control.DirectOutput.commandValueRamp < #axisData.Actor.MaxDerivative THEN
+	          #statManRamp := #axisData.Internal.Control.DirectOutput.commandValueRamp;
+	        ELSE
+	          #statManRamp := #axisData.Actor.MaxDerivative;
+	        END_IF;
+	        #statDecelerationDistance := ABS(#statActualNorm.Velocity) * (#axisData.DynamicAxisModel.VelocityTimeConstant + 0.5 * ABS(#statQOutputMan - #axisData.Internal.Control.DirectOutput.offset) / #statManRamp);
+	        IF #statDecelerationDistance >= #tempManualSafetyDistance THEN
+	          #statManQOutput := #axisData.Internal.Control.DirectOutput.offset;
+	          #statElapsedDelayTime := #axisData.DynamicAxisModel.VelocityTimeConstant;
+	          #statManOutDeceleration := TRUE;
+	        END_IF;
+	      END_IF;
+	      
+	    ELSE
+	      #statManQOutput := #axisData.Internal.Control.DirectOutput.commandValueForward;
+	      IF #axisData.Internal.Control.DirectOutput.commandValueRamp < #axisData.Actor.MaxDerivative THEN
+	        #statManRamp := #axisData.Internal.Control.DirectOutput.commandValueRamp;
+	      ELSE
+	        #statManRamp := #axisData.Actor.MaxDerivative;
+	      END_IF;
+	      
+	    END_IF;
+	    
+	  ELSIF #axisData.Internal.Control.DirectOutput.jogBackward AND NOT #axisData.Internal.Control.DirectOutput.jogForward
+	    AND #statRampingBackward AND NOT #axisData.Internal.MotionData.DirectOutput.minSafetyPositionOverrun THEN
+	    IF #axisData.Internal.PositionLimits_SW.Active THEN
+	      #tempManualSafetyDistance := #statActualNorm.Position - #axisData.Internal.PositionLimits_SW.MinPosition - #axisData.Internal.Control.DirectOutput.safetyDistance;
+	      IF #statManOutDeceleration THEN
+	        #statElapsedDelayTime := LIMIT(MN := 0.0, IN := (#statElapsedDelayTime - #statSampleTime), MX := #axisData.DynamicAxisModel.VelocityTimeConstant);
+	        #statManRamp := 0.5 * ABS(#statActualNorm.Velocity * (#statQOutputMan - #axisData.Internal.Control.DirectOutput.offset)) /
+	        MAX(IN1 := 0.001, IN2 := ABS(#tempManualSafetyDistance - #statElapsedDelayTime * ABS(#statActualNorm.Velocity)));
+	        IF #axisData.Actor.MaxDerivative < #statManRamp THEN
+	          #statManRamp := #axisData.Actor.MaxDerivative;
+	        END_IF;
+	      ELSE
+	        #statManQOutput := - #axisData.Internal.Control.DirectOutput.commandValueBackward;
+	        IF #axisData.Internal.Control.DirectOutput.commandValueRamp < #axisData.Actor.MaxDerivative THEN
+	          #statManRamp := #axisData.Internal.Control.DirectOutput.commandValueRamp;
+	        ELSE
+	          #statManRamp := #axisData.Actor.MaxDerivative;
+	        END_IF;
+	        #statDecelerationDistance := ABS(#statActualNorm.Velocity) * (#axisData.DynamicAxisModel.VelocityTimeConstant + 0.5 * ABS(#statQOutputMan - #axisData.Internal.Control.DirectOutput.offset) / #statManRamp);
+	        IF #statDecelerationDistance >= #tempManualSafetyDistance THEN
+	          #statManQOutput := #axisData.Internal.Control.DirectOutput.offset;
+	          #statElapsedDelayTime := #axisData.DynamicAxisModel.VelocityTimeConstant;
+	          #statManOutDeceleration := TRUE;
+	        END_IF;
+	      END_IF;
+	      
+	    ELSE
+	      #statManQOutput := - #axisData.Internal.Control.DirectOutput.commandValueBackward;
+	      IF #axisData.Internal.Control.DirectOutput.commandValueRamp < #axisData.Actor.MaxDerivative THEN
+	        #statManRamp := #axisData.Internal.Control.DirectOutput.commandValueRamp;
+	      ELSE
+	        #statManRamp := #axisData.Actor.MaxDerivative;
+	      END_IF;
+	    END_IF;
+	  ELSE
+	    #statManQOutput := #axisData.Internal.Control.DirectOutput.offset;
+	    #statManOutDeceleration := FALSE;
+	  END_IF;
+	  
+	  "LSimaHydTO_RampGen"(acceleration := #statManRamp,
+	                     inputValue := #statManQOutput,
+	                     deceleration := #statManRamp,
+	                     sampleTime := #statSampleTime,
+	                     active => #tempRampGenActive,
+	                     outputValue := #statQOutputMan);
+	  
+	#axisData.Internal.MotionData.DirectOutput.QOutputValue := #statQOutputMan;
+	#axisData.Internal.MotionData.DirectOutput.active := #statQOutputMan <> #axisData.Internal.Control.DirectOutput.offset;
+	#axisData.Internal.MotionData.DirectOutput.rampingDown := #statManOutDeceleration;
+	#statQOutput := #statQOutputMan;
+	
+	(*  If #axisData.Internal.MotionData.ManualOutput.active Then
+	    If Not #statManlActiveOld Then
+	      #statManPosCtrlOld := #axisData.Internal.MotionData.PositionControlled;
+	      #axisData.Internal.MotionData.PositionControlled := FALSE;
+	      #tempChangePosCtrl := TRUE;
+	    End_If;
+	  Else
+	    If #axisData.Internal.MotionData.PositionControlled Then
+	      #statQOutput := (#statMotionSetPoint + #axisData.StatusActor.AddSetPoint);
+	    Else
+	      #statQOutput := #statQOutputMan;
+	    End_If;
+	    
+	    If #statManlActiveOld Then
+	      #axisData.Internal.MotionData.PositionControlled := #statManPosCtrlOld;
+	      #tempChangePosCtrl := TRUE;
+	    End_If;
+	  End_If;
+	  #statManlActiveOld := #axisData.Internal.MotionData.ManualOutput.active;
+	  
+	*)  
+	  IF #axisData.StatusVChar.ActualVChar = 0 THEN
+	    #axisData.StatusActor.SetPoint := "LSimaHydTO_Scale"(input := #statQOutput,
+	                                                       inBegin := - #statQOutMax,
+	                                                       inEnd := #statQOutMax,
+	                                                       valBegin := - #statMaxSetPoint,
+	                                                       valEnd := #statMaxSetPoint);
+	  ELSE
+	    #axisData.StatusActor.SetPoint := "LSimaHydTO_VcharInverse"(qOutput := #statQOutput, VChar := #tempRefToVChar^);
+	  END_IF;
+	END_IF;
+	
+	IF (NOT #axisData.Actor.BiDirectional AND #axisData.StatusActor.ValveBackward) XOR #axisData.Actor.InverseDirection THEN
+	  #tempQOutput := - #statQOutput;
+	ELSE
+	  #tempQOutput := #statQOutput;
+	END_IF;
+	
+	"LSimaHydTO_RampGen"(acceleration := #axisData.Actor.MaxDerivative,
+	                   inputValue := LIMIT_LREAL(MN := - #statQOutMax, IN := #tempQOutput, MX := #statQOutMax),
+	                   deceleration := #axisData.Actor.MaxDerivative,
+	                   sampleTime := #statSampleTime,
+	                   active => #tempRampGenActive,
+	                   outputValue := #axisData.StatusActor.QOutputValue);
+	
+	#instWriteAxisSetpoint(setpoint := #axisData.StatusActor.QOutputValue,
+	                                     axis := #axisTO);
+	IF #instWriteAxisSetpoint.error THEN
+	  #statErrInternal := TRUE;
+	  #axisData.ErrorDetail.Number := #instWriteAxisSetpoint.status;
+	  CASE #axisData.ErrorDetail.Number OF
+	    #ALARM_OPTIMIZED_DB:
+	      #axisData.ErrorWord.%X1 := TRUE;
+	    #ALARM_INTERNAL:
+	      #axisData.ErrorWord.%X0 := TRUE;
+	      #statErrAddValue.%X2 := TRUE;
+	    #ALARM_WRITE_OUTPUT:
+	      #axisData.ErrorWord.%X13 := TRUE;
+	      
+	  END_CASE;
+	  #axisData.ErrorDetail.Reaction := #ERROR_REACTION_DISABLE;
+	END_IF;
+	
+	// change axis state
+	#instMC_MOVEVELOCITY_Zero(Axis := #axisTO,
+	                          Execute := #tempChangePosCtrl OR #tempAbortMovement,
+	                          Velocity := 0.0,
+	                          Acceleration := #statDynamicLimits.MaxAcceleration,
+	                          Deceleration := #statDynamicLimits.MaxDeceleration,
+	                          Jerk := 0.0,
+	                          Direction := 0,
+	                          Current := FALSE,
+	                          PositionControlled := #axisData.Internal.MotionData.PositionControlled);
+	
+	
+	END_REGION
+	
+	REGION alarms
+	  
+	  IF #statErrInternal AND NOT #statErrInternalOld THEN
+	    IF #axisData.Name = WSTRING#'' AND #statInstName = WSTRING#'' THEN
+	      #statInstName := GetSymbolName(variable := #axisData, size := 24);
+	    ELSE
+	      #statInstName := #axisData.Name;
+	    END_IF;
+	    
+	    
+	  END_IF;
+	  
+	  
+	  #instAxisAlarm(SIG := #statErrInternal,
+	                      SD_1 := #axisData.ErrorDetail.Number,
+	                      SD_2 := #statInstName,
+	                      SD_3 := #axisData.ErrorDetail.Number,
+	                      SD_4 := #statErrAddValue);
+	  
+	  #statErrInternalOld := #statErrInternal;
+	  
+	END_REGION
+	#statExecuteMovement := FALSE;
+	#statManEnableOld := #axisData.Internal.Control.DirectOutput.activate;
+	#statPosCtrlOld := #axisData.Internal.MotionData.PositionControlled;
+	#statForceCtrlOld := #axisData.Internal.MotionData.ForceControlled;
+	#statForceLimOld := #axisData.Internal.MotionData.ForceLimited;
+	#statVCharOld := #axisData.StatusVChar.ActualVChar;
+	#statInit := FALSE;
+	
+	REGION writeOutput
+	  #axisData.ActualPosition := #statActualNorm.Position;
+	  //#axisData.Velocity := #statCommandNorm.Velocity;
+	  #axisData.Acceleration := #statCommandNorm.Acceleration;
+	  #axisData.Position := #statCommandNorm.Position;
+	  
+	  #axisData.StatusForce.ForceLimitingCommand := #axisData.Internal.MotionData.ForceLimited;
+	  #axisData.StatusForce.InLimitation := #statForceLimitation;
+	  #axisData.StatusForce.ForceControl := #axisData.Internal.MotionData.ForceControlled;
+	  IF #statClamping THEN
+	    #axisData.StatusForce.InClamping := TRUE;
+	  END_IF;
+	  
+	END_REGION
+	
+END_FUNCTION_BLOCK
+

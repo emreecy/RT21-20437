@@ -1,0 +1,80 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_ProfiDriveTel2"
+{ S7_Optimized_Access := 'FALSE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_OUTPUT 
+      setpoint { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      driveEnabled { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR_IN_OUT 
+      tel2in {InstructionName := 'PD_TEL2_IN'; LibVersion := '4.0'} : PD_TEL2_IN;
+      tel2out {InstructionName := 'PD_TEL2_OUT'; LibVersion := '4.0'} : PD_TEL2_OUT;
+   END_VAR
+
+   VAR 
+      statZSW1 {InstructionName := 'PD_ZSW1'; LibVersion := '4.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : PD_ZSW1;
+      statWZSW1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} AT statZSW1 : Word;
+   END_VAR
+
+   VAR_TEMP 
+      tempNsollSigned : DInt;
+   END_VAR
+
+   VAR CONSTANT 
+      ZSW1_S1 : Word := 2#0000_0011_0111_0000;
+      ZSW1_S2 : Word := 2#0000_0011_0011_0001;
+      ZSW1_S3 : Word := 2#0000_0011_0011_0011;
+      ZSW1_S4 : Word := 2#0000_0011_0011_0111;
+      C_100_PROZENT : LReal := 10737418.24;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: Support of drive transmitter   
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    29.03.2017    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	IF #tel2out.STW1.NoCoastStop AND #tel2out.STW1.NoQuickStop THEN
+	    IF #tel2out.STW1.On THEN
+	        IF #tel2out.STW1.EnableOperation THEN
+	            #statWZSW1 := #ZSW1_S4;             // operation
+	            #driveEnabled := TRUE;
+	        ELSE
+	            #statWZSW1 := #ZSW1_S3;             // switched on
+	        END_IF;
+	    ELSE
+	        #statWZSW1 := #ZSW1_S2;                 // ready for switch on
+	    END_IF;
+	ELSE
+	    #statWZSW1 := #ZSW1_S1;                 // coast stop, quick stop
+	    #driveEnabled := FALSE;
+	END_IF;
+	#tel2in.ZSW1 := #statZSW1;
+	//-----------------  Interface -----------  
+	#tempNsollSigned := DWORD_TO_DINT(#tel2out.NSOLL_B); // NSOLL is really a signed DINT
+	#setpoint := DINT_TO_LREAL(#tempNsollSigned)/#C_100_PROZENT;      // desired speed 
+	IF #statWZSW1 = #ZSW1_S4 THEN
+	  #tel2in.NIST_B := #tel2out.NSOLL_B;
+	ELSE
+	  #tel2in.NIST_B := 0;
+	END_IF;
+	
+	
+END_FUNCTION_BLOCK
+

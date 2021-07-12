@@ -1,0 +1,226 @@
+﻿FUNCTION_BLOCK "SimaHydTO_VCharMeasurement"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      hmiConnection : "SimaHydTO_typeHMIConnection";
+      axisData : "LSimaHydTO_typeAxisData";
+      axesArray : Array[*] of "SimaHydTO_typeAxesArray";
+      vCharArray : Array[*] of "SimaHydTO_typeVCharArray";
+   END_VAR
+
+   VAR 
+      statFirstRunDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statActualAxisDB { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DB_ANY;
+      statActualVCharIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statVCharIndexOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := -1;
+      statExecute { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statContinue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statExecuteOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instGetCharacteristics { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_GetCharacteristic";
+      instHmiVCharSelector { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_HmiVCharSelector";
+      statLoadOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSaveOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSaveToDBL { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBusyWrite { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRampigForward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRampingBackward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statActualAxisIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statVCharArrMinIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statVCharArrMaxIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statDefaultConfig { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_typeMeasurementConfig";
+   END_VAR
+
+   VAR_TEMP 
+      tempVariant : Variant;
+      tempHydAxis : REF_TO "LSimaHydTO_typeAxisData";
+      tempErrorVariant : Int;
+      tempRetVal : Int;
+      tempInt : Int;
+      tempSearchDone : Bool;
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_VCharMeasurement
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Automatic measurement of valve characteristics
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 16.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	//Array detection and initialization
+	IF (#statFirstRunDone = False)
+	THEN
+	  //Get MIN and MAX of array indices
+	  #statVCharArrMinIndex := DINT_TO_INT(LOWER_BOUND(ARR := #vCharArray, DIM := 1));
+	  #statVCharArrMaxIndex := DINT_TO_INT(UPPER_BOUND(ARR := #vCharArray, DIM := 1));
+	  //Set default value of actual axis index
+	  #statActualVCharIndex := #statVCharArrMinIndex - 1;
+	  #statVCharIndexOld := #statActualVCharIndex;
+	  
+	  //Mark first run of function block
+	  #statFirstRunDone := True;
+	END_IF;
+	
+	(*
+	  #instHmiVCharSelector(command := #hmiConnection.VCharEditor.Command.VCharLoad,
+	                         status => #hmiConnection.VCharEditor.Status.VCharLoad,
+	                         VCharArray := #VCharArray);
+	                         *)
+	
+	//Check axis selection, if axis has changed
+	IF #hmiConnection.AxisSelector.Status.selectionChanged
+	  AND #hmiConnection.AxisSelector.Status.dataValid
+	THEN
+	  
+	  #statActualAxisIndex := #hmiConnection.AxisSelector.Status.actualAxisIndex;
+	  #tempSearchDone := FALSE;
+	  FOR #tempInt := #statVCharArrMinIndex TO #statVCharArrMaxIndex DO
+	    IF #vCharArray[#tempInt].VChar_DB = #hmiConnection.AxisSelector.Status.selectedVChar THEN
+	      #statActualVCharIndex := #tempInt;
+	      #tempSearchDone := TRUE;
+	      EXIT;
+	    END_IF;
+	  END_FOR;
+	  IF NOT #tempSearchDone THEN
+	    #statActualVCharIndex := #statVCharArrMinIndex - 1;
+	  END_IF;
+	  
+	END_IF;
+	
+	IF  #hmiConnection.GetCharacteristics.Command.loadConfig AND NOT #statLoadOld 
+	  THEN
+	    IF #statActualVCharIndex >= #statVCharArrMinIndex THEN
+	      #hmiConnection.GetCharacteristics.ConfigData := #vCharArray[#statActualVCharIndex].measurementConfig;
+	      #hmiConnection.BasicAxisControl.ControlDirectOutput.safetyDistance := #hmiConnection.GetCharacteristics.ConfigData.safetyDistance;
+	      #hmiConnection.GetCharacteristics.Command.abort := FALSE;
+	      #hmiConnection.GetCharacteristics.Command.execute := FALSE;
+	      #hmiConnection.GetCharacteristics.Command.saveConfig := FALSE;
+	      #hmiConnection.GetCharacteristics.Command.loadConfig := FALSE;
+	    ELSE
+	      #hmiConnection.GetCharacteristics.ConfigData := #statDefaultConfig;
+	    END_IF;
+	    #statVCharIndexOld := #statActualVCharIndex;
+	    
+	  END_IF;
+	  
+	//Check start of measurement
+	IF (#hmiConnection.GetCharacteristics.Command.execute
+	  AND NOT #statExecuteOld
+	  AND NOT #hmiConnection.GetCharacteristics.Status.busy
+	  AND #hmiConnection.AxisSelector.Status.dataValid)
+	THEN
+	  //Save axis selection
+	  
+	  #statActualAxisDB := #hmiConnection.AxisSelector.Status.selectedAxis;
+	  #statActualAxisIndex := #hmiConnection.AxisSelector.Status.actualAxisIndex;
+	  #hmiConnection.GetCharacteristics.ConfigData.safetyDistance := #hmiConnection.BasicAxisControl.ControlDirectOutput.safetyDistance;
+	  IF #statActualVCharIndex >= #statVCharArrMinIndex THEN
+	    #vCharArray[#statActualVCharIndex].measurementConfig := #hmiConnection.GetCharacteristics.ConfigData;
+	  END_IF;
+	  
+	  #statExecute := TRUE;
+	ELSIF(#hmiConnection.GetCharacteristics.Command.execute
+	  AND NOT #statExecuteOld
+	  AND #hmiConnection.GetCharacteristics.Status.busy)
+	THEN
+	  #statContinue := TRUE;
+	END_IF;
+	
+	//Do measurement
+	IF #hmiConnection.GetCharacteristics.Status.busy THEN
+	  #statRampigForward := #axesArray[#statActualAxisIndex].VCharMeasurement.enableRampingForward;
+	  #statRampingBackward := #axesArray[#statActualAxisIndex].VCharMeasurement.enableRampingBackward;
+	  
+	END_IF;
+	#tempVariant := DB_ANY_TO_VARIANT(in := #statActualAxisDB, err => #tempErrorVariant);
+	
+	IF TypeOf(#tempVariant) = LSimaHydTO_typeAxisData THEN
+	  //Get hydraulic axis data
+	  #tempHydAxis ?= #tempVariant;
+	  //Call measurement function block
+	  #instGetCharacteristics(execute:=#statExecute,
+	                          abort:=#hmiConnection.GetCharacteristics.Command.abort,
+	                          continueMeasurement:=#statContinue,
+	                          enableRampingForward:=#hmiConnection.GetCharacteristics.Command.enableRampingForward AND #statRampigForward,
+	                          enableRampingBackward:=#hmiConnection.GetCharacteristics.Command.enableRampingBackward AND #statRampingBackward,
+	                          qOutputValueStepForward=>#hmiConnection.GetCharacteristics.Status.qOutputValueStepForward,
+	                          qOutputValueStepBackward=>#hmiConnection.GetCharacteristics.Status.qOutputValueStepBackward,
+	                          velocityStepForward=>#hmiConnection.GetCharacteristics.Status.velocityStepForward,
+	                          velocityStepBackward=>#hmiConnection.GetCharacteristics.Status.velocityStepBackward,
+	                          requestForward=>#hmiConnection.GetCharacteristics.Status.requestForward,
+	                          requestBackward=>#hmiConnection.GetCharacteristics.Status.requestBackward,
+	                          statusMeasurement=>#hmiConnection.GetCharacteristics.Status.statusMeasurement,
+	                         // done=>#hmiConnection.GetCharacteristics.Status.done,
+	                          busy=>#hmiConnection.GetCharacteristics.Status.busy,
+	                         // commandAborted=>#hmiConnection.GetCharacteristics.Status.commandAborted,
+	                         // error=>#hmiConnection.GetCharacteristics.Status.error,
+	                         // status=>#hmiConnection.GetCharacteristics.Status.status,
+	                          measuredValues := #hmiConnection.GetCharacteristics.MeasuredValues,
+	                          configData := #hmiConnection.GetCharacteristics.ConfigData,
+	                          axis := #tempHydAxis^);
+	  
+	  #axesArray[#statActualAxisIndex].VCharMeasurement.requestForward := #hmiConnection.GetCharacteristics.Status.requestForward;
+	  #axesArray[#statActualAxisIndex].VCharMeasurement.requestBackward := #hmiConnection.GetCharacteristics.Status.requestBackward;
+	  
+	  IF #instGetCharacteristics.error THEN
+	    #hmiConnection.GetCharacteristics.Status.error := TRUE;
+	    #hmiConnection.GetCharacteristics.Status.done := FALSE;
+	    #hmiConnection.GetCharacteristics.Status.commandAborted := FALSE;
+	  ELSIF #instGetCharacteristics.commandAborted THEN
+	    #hmiConnection.GetCharacteristics.Status.commandAborted := TRUE;
+	    #hmiConnection.GetCharacteristics.Status.done := FALSE;
+	  ELSIF #instGetCharacteristics.done THEN
+	    #hmiConnection.GetCharacteristics.Status.done := TRUE;
+	  ELSIF #instGetCharacteristics.busy THEN
+	    #hmiConnection.GetCharacteristics.Status.done := FALSE;
+	    #hmiConnection.GetCharacteristics.Status.commandAborted := FALSE;
+	    #hmiConnection.GetCharacteristics.Status.error := FALSE;
+	  END_IF;
+	    
+	  IF #instGetCharacteristics.status <> 16#7000 OR NOT (#hmiConnection.GetCharacteristics.Status.error OR #hmiConnection.GetCharacteristics.Status.commandAborted)
+	  THEN
+	    #hmiConnection.GetCharacteristics.Status.status := #instGetCharacteristics.status;
+	  END_IF;
+	  
+	END_IF;
+	
+	// save configuration
+	IF #hmiConnection.GetCharacteristics.Command.saveConfig
+	  AND NOT #statSaveOld
+	  AND #statActualVCharIndex >= #statVCharArrMinIndex
+	THEN
+	  #vCharArray[#statActualVCharIndex].measurementConfig := #hmiConnection.GetCharacteristics.ConfigData;
+	  #statSaveToDBL := TRUE;
+	END_IF;
+	
+	IF #statSaveToDBL THEN
+	  #tempRetVal := WRIT_DBL(REQ := TRUE,
+	                          SRCBLK := #vCharArray[#statActualVCharIndex],
+	                          BUSY => #statBusyWrite,
+	                          DSTBLK => #vCharArray[#statActualVCharIndex]);
+	  IF NOT #statBusyWrite THEN
+	    #statSaveToDBL := FALSE;
+	  END_IF;
+	  
+	END_IF;
+	
+	#statExecute := FALSE;
+	#statContinue := FALSE;
+	//Save data from last cycle
+	#statExecuteOld := #hmiConnection.GetCharacteristics.Command.execute;
+	#statSaveOld := #hmiConnection.GetCharacteristics.Command.saveConfig;
+	#statLoadOld := #hmiConnection.GetCharacteristics.Command.loadConfig;
+	
+END_FUNCTION_BLOCK
+

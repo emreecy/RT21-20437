@@ -1,0 +1,165 @@
+﻿FUNCTION_BLOCK "SimaHydTO_HMI"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      hmiConnection : "SimaHydTO_typeHMIConnection";
+      axesArray : Array[*] of "SimaHydTO_typeAxesArray";
+      vCharArray : Array[*] of "SimaHydTO_typeVCharArray";
+   END_VAR
+
+   VAR 
+      statInitObjects { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := TRUE;
+      instHmiAxisSelector { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_HmiAxisSelector";
+      instHmiVCharSelector { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_HmiVCharSelector";
+      instBasicAxisControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_BasicAxisControl";
+      instVCharMeasurement { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_VCharMeasurement";
+      instVCharEditor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_VCharEditor";
+      instAdvancedAxisControl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_AdvancedAxisControl";
+      instParameterSettings { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_ParameterSettings";
+      instFindVChars { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_FindObjects";
+      instVCharManagement { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_VCharManagement";
+   END_VAR
+
+   VAR_TEMP 
+      tempVariant : Variant;
+      tempErrorVariant : Int;
+      tempDbAny : DB_ANY;
+      tempHydAxisData : REF_TO "LSimaHydTO_typeAxisData";
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_HMI
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Connection between HMI and PLC program
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 12.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	#instFindVChars(execute := #statInitObjects,
+	                axesArray := #axesArray,
+	                vCharArray := #vCharArray);
+	IF NOT #instFindVChars.busy THEN
+	  #statInitObjects := FALSE;
+	END_IF;
+	
+	//=============================================================================
+	//Axis selector
+	//=============================================================================
+	
+	//Axis selection 
+	#instHmiAxisSelector(selector := #hmiConnection.AxisSelector,
+	                     axesArray := #axesArray);
+	
+	
+	
+	//===================================================================================
+	//evalute objects
+	//
+	
+	#tempDbAny := #hmiConnection.AxisSelector.Status.selectedAxis;
+	#tempVariant := DB_ANY_TO_VARIANT(in := #tempDbAny, err => #tempErrorVariant);
+	
+	IF TypeOf(#tempVariant) = LSimaHydTO_typeAxisData THEN
+	  #tempHydAxisData ?= #tempVariant;
+	  
+	END_IF;
+	//=============================================================================
+	//Basic axis control
+	//=============================================================================
+	
+	//Check axis selection
+	IF (#hmiConnection.AxisSelector.Status.dataValid = True)
+	THEN
+	  IF (#hmiConnection.AxisSelector.Status.selectionChanged = True)
+	  THEN
+	    CASE #hmiConnection.AxisSelector.Status.selectedTypeOfAxis OF
+	      2: //posaxis
+	        #hmiConnection.AxisToData.axisUnits := "SimaHydTO_GetAxisToUnits_PosAxis"(#hmiConnection.AxisSelector.Status.selectedTO_Axis);
+	        
+	      3: // syncaxis
+	        #hmiConnection.AxisToData.axisUnits := "SimaHydTO_GetAxisToUnits_SyncAxis"(#hmiConnection.AxisSelector.Status.selectedTO_Axis);
+	        
+	    END_CASE;
+	    #hmiConnection.AxisToData.typeOfAxis := #hmiConnection.AxisSelector.Status.selectedTypeOfAxis;
+	  END_IF;
+	  
+	  // Axis animation
+	    "SimaHydTO_HmiAxisAnimation"(hmiConnection := #hmiConnection,
+	                                 axisData := #tempHydAxisData^);
+	    
+	  
+	  
+	  //Transfer data between axis and HMI
+	  #instBasicAxisControl(hmiConnection := #hmiConnection,
+	                        axisData := #tempHydAxisData^,
+	                        axesArray := #axesArray);
+	  
+	  
+	  
+	  //=============================================================================
+	  //VChar measurement
+	  //=============================================================================
+	  
+	  //Call function block
+	  #instVCharMeasurement(hmiConnection := #hmiConnection,
+	                        axisData := #tempHydAxisData^,
+	                        axesArray:=#axesArray,
+	                        vCharArray := #vCharArray);
+	  
+	  
+	  
+	  //=============================================================================
+	  //Advanced axis control
+	  //=============================================================================
+	  #instAdvancedAxisControl(hmiConnection := #hmiConnection,
+	                           axisData := #tempHydAxisData^,
+	                           axesArray := #axesArray);
+	  
+	  
+	  #instVCharManagement(hmiConnection:=#hmiConnection,
+	                       axisData:=#tempHydAxisData^,
+	                       vCharArray:=#vCharArray);
+	
+	  
+	ELSE
+	  //In case of no valid data of axis selection, do nothing...
+	  ;
+	END_IF;
+	
+	//=============================================================================
+	//VChar editor
+	//=============================================================================
+	
+	//Do function...
+	#instVCharEditor(hmiConnection := #hmiConnection,
+	                 vCharArray := #vCharArray);
+	
+	
+	
+	//=============================================================================
+	//Parameter settings
+	//=============================================================================
+	
+	//Check axis selection
+	//Do function...
+	#instParameterSettings(hmiConnection := #hmiConnection,
+	                       axisData := #tempHydAxisData^,
+	                       VCharArray := #vCharArray);
+	
+	
+	
+	
+	
+END_FUNCTION_BLOCK
+

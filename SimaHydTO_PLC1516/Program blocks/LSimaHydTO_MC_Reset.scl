@@ -1,0 +1,159 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_MC_Reset"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      Execute : Bool;
+   END_VAR
+
+   VAR_OUTPUT 
+      Done { ExternalWritable := 'False'} : Bool;
+      Busy { ExternalWritable := 'False'} : Bool;
+      CommandAborted { ExternalWritable := 'False'} : Bool;
+      Error { ExternalWritable := 'False'} : Bool;
+      ErrorID { ExternalWritable := 'False'} : Word;
+   END_VAR
+
+   VAR_IN_OUT 
+      Axis : "LSimaHydTO_typeAxisData";
+   END_VAR
+
+   VAR 
+      statFBState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statExecuteOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      NO_ERROR : Word := 16#0000_0000;
+      STATE_IDLE : DInt;
+      STATE_FIRST_CYCLE : DInt := 10;
+      STATE_BUSY : DInt := 20;
+      STATE_DONE : DInt := 30;
+      STATE_COMMAND_ABORTED : DInt := 40;
+      STATE_ERROR : DInt := 100;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2016 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library: LSimaHydTO
+	//Tested with: S7-15xx
+	//Engineering: TIA Portal  V15 (SW 2.5)
+	//Restrictions: -
+	//Requirements: S7-1500
+	//Functionality:    acknowledges all technology alarms that can be acknowledged 
+	//                  in the user program
+	//
+	//-------------------------------------------------------------------------------9
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	// ----------------------------------------------------------------------
+	// start
+	// ----------------------------------------------------------------------
+	// rising edge of execute starts functionality
+	IF #Execute AND NOT #statExecuteOld  THEN
+	    // initialization
+	    #Done := FALSE;
+	    #CommandAborted := FALSE;
+	    #Busy := FALSE;
+	    #Error := FALSE;
+	    #ErrorID := #NO_ERROR;
+	    #statFBState := #STATE_FIRST_CYCLE;
+	END_IF;
+	
+	// ----------------------------------------------------------------------
+	// busy
+	// ----------------------------------------------------------------------
+	  CASE #statFBState OF
+	    #STATE_FIRST_CYCLE:
+	      
+	      #CommandAborted := FALSE;
+	      #Axis.Internal.Control.AckError := TRUE;
+	      
+	      IF   #Axis.ErrorWord = 0  THEN
+	        #Done := TRUE;
+	          #statFBState := #STATE_DONE;
+	          
+	        ELSE
+	            #Busy := TRUE;
+	            #statFBState := #STATE_BUSY;
+	        END_IF;
+	        
+	      
+	      #STATE_BUSY:
+	        
+	        IF #Axis.ErrorWord = 0 THEN
+	          #Axis.Internal.Control.AckError := FALSE;
+	          
+	          #Done := TRUE;
+	          #Busy := FALSE;
+	          #statFBState := #STATE_DONE;
+	          
+	        END_IF;
+	      
+	// -------------------------------------------------------------------------
+	// state analysis (no function)
+	// -------------------------------------------------------------------------
+	  #STATE_IDLE:
+	    // ======================================================================
+	    ;
+	    
+	  #STATE_DONE:
+	    // ======================================================================
+	    // output for one cycle minimum
+	    // 
+	    IF #Axis.ErrorWord = 0 THEN
+	      #Axis.Internal.Control.AckError := FALSE;
+	    END_IF;
+	    IF NOT #Execute THEN
+	      #Done := FALSE;
+	      #Axis.Internal.Control.AckError := FALSE;
+	      #statFBState := #STATE_IDLE;
+	    END_IF;
+	    
+	  #STATE_COMMAND_ABORTED:
+	    // ======================================================================
+	    // reset commandAborted, output for one cycle minimum
+	    IF NOT #Execute THEN
+	      #CommandAborted := FALSE;
+	      #statFBState := #STATE_IDLE;
+	    END_IF;
+	    
+	  #STATE_ERROR:
+	    // ======================================================================
+	    // reset error, output for one cycle minimum
+	    IF #Axis.ErrorWord = 0 THEN
+	      #Axis.Internal.Control.AckError := FALSE;
+	    END_IF;
+	    IF NOT #Execute THEN
+	      #Axis.Internal.Control.AckError := FALSE;
+	      #Error := FALSE;
+	      #ErrorID := #NO_ERROR;
+	      #statFBState := #STATE_IDLE;
+	    END_IF;
+	    
+	    
+	  ELSE
+	    // ======================================================================
+	    // when FB is busy...
+	    ;
+	END_CASE;
+	
+	// -------------------------------------------------------------------------
+	// always executed
+	// -------------------------------------------------------------------------
+	
+	// edge detection
+	#statExecuteOld := #Execute;
+	
+	
+END_FUNCTION_BLOCK
+

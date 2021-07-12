@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V16" />
+  <DocumentInfo>
+    <Created>2021-07-12T14:47:17.9978972Z</Created>
+    <ExportSetting>WithDefaults</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>TIA Portal Version Control Interface</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <OptionPackage>
+        <DisplayName>TIA Portal Openness</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>STEP 7 Safety</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>WinCC Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+  <Section Name="None">
+    <Member Name="Command" Datatype="&quot;SimaHydTO_typeHMIConnectionAdvancedAxisControlCommand&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Command (HMI -&gt; PLC)</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="moveRelativeExecute" Datatype="Bool" /><Member Name="moveRelativeDistance" Datatype="LReal" /><Member Name="moveAbsoluteExecute" Datatype="Bool" /><Member Name="moveAbsolutePosition" Datatype="LReal" /><Member Name="moveAbsoluteDirection" Datatype="Int" /><Member Name="haltExecute" Datatype="Bool" /><Member Name="haltAbortAcceleration" Datatype="Bool" /><Member Name="Velocity" Datatype="LReal" /><Member Name="Acceleration" Datatype="LReal" /><Member Name="Deceleration" Datatype="LReal" /><Member Name="Jerk" Datatype="LReal" /></Section></Sections></Member>
+    <Member Name="Status" Datatype="&quot;SimaHydTO_typeHMIConnectionAdvancedAxisControlStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Status (PLC -&gt; HMI)</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="moveRelativeDone" Datatype="Bool" /><Member Name="moveRelativeBusy" Datatype="Bool" /><Member Name="moveAbsoluteDone" Datatype="Bool" /><Member Name="moveAbsoluteBusy" Datatype="Bool" /><Member Name="haltDone" Datatype="Bool" /><Member Name="haltBusy" Datatype="Bool" /><Member Name="commandAborted" Datatype="Bool" /><Member Name="error" Datatype="Bool" /><Member Name="errorID" Datatype="Word" /><Member Name="statusID" Datatype="Int" /></Section></Sections></Member>
+  </Section>
+</Sections></Interface>
+      <IsFailsafeCompliant>false</IsFailsafeCompliant>
+      <Name>SimaHydTO_typeHMIConnectionAdvancedAxisControl</Name>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>HMI interface: Advanced axis control</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="4" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>SimaHydTO_typeHMIConnectionAdvancedAxisControl</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="6" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

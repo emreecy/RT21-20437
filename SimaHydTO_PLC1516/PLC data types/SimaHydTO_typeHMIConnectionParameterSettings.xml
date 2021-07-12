@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V16" />
+  <DocumentInfo>
+    <Created>2021-07-12T14:47:21.2092262Z</Created>
+    <ExportSetting>WithDefaults</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>TIA Portal Version Control Interface</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <OptionPackage>
+        <DisplayName>TIA Portal Openness</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>STEP 7 Safety</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>WinCC Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+  <Section Name="None">
+    <Member Name="AxisData" Datatype="&quot;SimaHydTO_typeHMIConnectionParameterSettingsAxisData&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Sections><Section Name="None"><Member Name="Actor" Datatype="&quot;LSimaHydTO_typeActor&quot;"><Sections><Section Name="None"><Member Name="InverseDirection" Datatype="Bool" /><Member Name="BiDirectional" Datatype="Bool" /><Member Name="SubstituteValue" Datatype="LReal" /><Member Name="MaxDerivative" Datatype="LReal" /><Member Name="DirectionValves" Datatype="&quot;LSimaHydTO_typeActorDirectionValves&quot;"><Sections><Section Name="None"><Member Name="WaitTimeByDirectionChange" Datatype="LReal" /><Member Name="DelayTimeValveForward" Datatype="LReal" /><Member Name="DelayTimeValveBackward" Datatype="LReal" /><Member Name="ValvesOffMode" Datatype="DInt" /><Member Name="DisplacementForce" Datatype="Bool" /></Section></Sections></Member></Section></Sections></Member><Member Name="ValveCharacteristic" Datatype="&quot;LSimaHydTO_typeValveCharacteristic&quot;"><Sections><Section Name="None"><Member Name="DB_NUMBER" Datatype="UInt" /><Member Name="SmoothChangeTime" Datatype="Real" /><Member Name="SmoothingMode" Datatype="Int" /></Section></Sections></Member><Member Name="ForceLimits" Datatype="&quot;LSimaHydTO_typeForceLimits&quot;"><Sections><Section Name="None"><Member Name="MaxForce" Datatype="LReal" /><Member Name="MaxForceRamp" Datatype="LReal" /></Section></Sections></Member><Member Name="Pressure_A_Transducer" Datatype="&quot;LSimaHydTO_typeTransducer&quot;"><Sections><Section Name="None"><Member Name="HWReference" Datatype="Int" /><Member Name="NominalPressure" Datatype="LReal" /><Member Name="Area" Datatype="LReal" /><Member Name="Offset" Datatype="LReal" /><Member Name="FilterTime" Datatype="LReal" /><Member Name="ErrorValue" Datatype="Word" /></Section></Sections></Member><Member Name="Pressure_B_Transducer" Datatype="&quot;LSimaHydTO_typeTransducer&quot;"><Sections><Section Name="None"><Member Name="HWReference" Datatype="Int" /><Member Name="NominalPressure" Datatype="LReal" /><Member Name="Area" Datatype="LReal" /><Member Name="Offset" Datatype="LReal" /><Member Name="FilterTime" Datatype="LReal" /><Member Name="ErrorValue" Datatype="Word" /></Section></Sections></Member><Member Name="PositionControl" Datatype="&quot;LSimaHydTO_typePositionControl&quot;"><Sections><Section Name="None"><Member Name="SmoothingTimeByChangeDifference" Datatype="LReal" /><Member Name="PreControl" Datatype="LReal" /><Member Name="ProportionalGain" Datatype="LReal" /><Member Name="IntegralTime" Datatype="LReal" /><Member Name="DerivativeTime" Datatype="LReal" /><Member Name="DecayTime" Datatype="LReal" /><Member Name="OutputUppLimit" Datatype="LReal" /><Member Name="OutputLowLimit" Datatype="LReal" /></Section></Sections></Member><Member Name="ForceControl" Datatype="&quot;LSimaHydTO_typeForceControl&quot;"><Sections><Section Name="None"><Member Name="SmoothingTimeByChangeDifference" Datatype="LReal" /><Member Name="PreControl" Datatype="LReal" /><Member Name="Stiffness" Datatype="LReal" /><Member Name="ProportionalGain" Datatype="LReal" /><Member Name="IntegralTime" Datatype="LReal" /><Member Name="DerivativeTime" Datatype="LReal" /><Member Name="DecayTime" Datatype="LReal" /><Member Name="OutputUppLimit" Datatype="LReal" /><Member Name="OutputLowLimit" Datatype="LReal" /><Member Name="SmoothSwitching" Datatype="Bool" /><Member Name="InvertSetpoint" Datatype="Bool" /></Section></Sections></Member><Member Name="DynamicAxisModel" Datatype="&quot;LSimaHydTO_typeDynamicAxisModel&quot;"><Sections><Section Name="None"><Member Name="VelocityTimeConstant" Datatype="LReal" /><Member Name="ForceTimeConstant" Datatype="LReal" /></Section></Sections></Member><Member Name="SmoothingFilter" Datatype="&quot;LSimaHydTO_typeSmoothingFilter&quot;"><Sections><Section Name="None"><Member Name="VelocityFilter" Datatype="LReal" /><Member Name="AccelerationFilter" Datatype="LReal" /></Section></Sections></Member><Member Name="StatusActor" Datatype="&quot;LSimaHydTO_typeStatusActor&quot;"><Sections><Section Name="None"><Member Name="SetPoint" Datatype="LReal" /><Member Name="AddSetPoint" Datatype="LReal" /><Member Name="QOutputValue" Datatype="LReal" /><Member Name="Enabled" Datatype="Bool" /><Member Name="ValveForward" Datatype="Bool" /><Member Name="ValveBackward" Datatype="Bool" /></Section></Sections></Member><Member Name="StatusVChar" Datatype="&quot;LSimaHydTO_typeStatusVChar&quot;"><Sections><Section Name="None"><Member Name="ActualVChar" Datatype="UInt" /></Section></Sections></Member><Member Name="Status_A_Transducer" Datatype="&quot;LSimaHydTO_typeStatusTransducer&quot;"><Sections><Section Name="None"><Member Name="RawValue" Datatype="Word" /><Member Name="PressureValue" Datatype="LReal" /><Member Name="ForceValue" Datatype="LReal" /><Member Name="Error" Datatype="Bool" /></Section></Sections></Member><Member Name="Status_B_Transducer" Datatype="&quot;LSimaHydTO_typeStatusTransducer&quot;"><Sections><Section Name="None"><Member Name="RawValue" Datatype="Word" /><Member Name="PressureValue" Datatype="LReal" /><Member Name="ForceValue" Datatype="LReal" /><Member Name="Error" Datatype="Bool" /></Section></Sections></Member><Member Name="StatusServo" Datatype="&quot;LSimaHydTO_typeStatusServo&quot;"><Sections><Section Name="None"><Member Name="BalancedPosition" Datatype="LReal" /><Member Name="ControlDifference" Datatype="LReal" /></Section></Sections></Member><Member Name="StatusForce" Datatype="&quot;LSimaHydTO_typeStatusForce&quot;"><Sections><Section Name="None"><Member Name="ForceLimitingCommand" Datatype="Bool" /><Member Name="InLimitation" Datatype="Bool" /><Member Name="InClamping" Datatype="Bool" /><Member Name="ForceControl" Datatype="Bool" /><Member Name="TargetForce" Datatype="LReal" /><Member Name="ForceDerivedValue" Datatype="LReal" /><Member Name="PreControlValue" Datatype="LReal" /><Member Name="BalancedForce" Datatype="LReal" /><Member Name="ControlDifference" Datatype="LReal" /><Member Name="ControlOutput" Datatype="LReal" /></Section></Sections></Member><Member Name="StatusForceProfile" Datatype="&quot;LSimaHydTO_typeStatusForceProfile&quot;"><Sections><Section Name="None"><Member Name="ActualProfile" Datatype="UInt" /><Member Name="ForceProfileMode" Datatype="DInt" /><Member Name="Active" Datatype="Bool" /><Member Name="State" Datatype="DInt" /><Member Name="BaseValue" Datatype="LReal" /><Member Name="ProfileValue" Datatype="LReal" /></Section></Sections></Member><Member Name="Name" Datatype="WString[24]" /><Member Name="VCharName" Datatype="WString[24]" /></Section></Sections></Member>
+    <Member Name="Commands" Datatype="&quot;SimaHydTO_typeHMIConnectionParameterSettingsCommands&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Data: HMI -&gt; PLC</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="Edit" Datatype="Bool" /><Member Name="Activate" Datatype="Bool" /><Member Name="Save" Datatype="Bool" /><Member Name="Restore" Datatype="Bool" /><Member Name="Abort" Datatype="Bool" /><Member Name="ApplyVChar" Datatype="Bool" /><Member Name="VCharSelector" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharSelectorCommand&quot;"><Sections><Section Name="None"><Member Name="previousObject" Datatype="Bool" /><Member Name="nextObject" Datatype="Bool" /><Member Name="executeDirectIndexSelection" Datatype="Bool" /><Member Name="directIndexSelection" Datatype="Int" /></Section></Sections></Member></Section></Sections></Member>
+    <Member Name="Status" Datatype="&quot;SimaHydTO_typeHMIConnectionParameterSettingsStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Data: PLC -&gt; HMI</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="EditorActive" Datatype="Bool" /><Member Name="StateActivation" Datatype="Int" /><Member Name="StateSaving" Datatype="Int" /><Member Name="StateLoading" Datatype="Int" /><Member Name="VCharSelector" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharSelectorStatus&quot;"><Sections><Section Name="None"><Member Name="actualVCharIndex" Datatype="Int" /><Member Name="selectedVCharInteger" Datatype="UInt" /><Member Name="selectedVChar" Datatype="DB_ANY" /><Member Name="selectedVCharName" Datatype="WString[24]" /><Member Name="dataValid" Datatype="Bool" /><Member Name="dataError" Datatype="Bool" /></Section></Sections></Member></Section></Sections></Member>
+  </Section>
+</Sections></Interface>
+      <IsFailsafeCompliant>false</IsFailsafeCompliant>
+      <Name>SimaHydTO_typeHMIConnectionParameterSettings</Name>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>HMI interface: Parameter settings</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="4" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>SimaHydTO_typeHMIConnectionParameterSettings</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="6" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

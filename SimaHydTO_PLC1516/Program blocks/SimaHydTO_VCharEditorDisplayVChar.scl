@@ -1,0 +1,121 @@
+﻿FUNCTION "SimaHydTO_VCharEditorDisplayVChar" : Void
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      hmiConnection : "SimaHydTO_typeHMIConnection";
+      displayVChar : "LSimaHydTO_typeVCharData";
+   END_VAR
+
+   VAR_TEMP 
+      tempIndex : Int;
+      tempIndex2 : Int;
+      tempVCharIndex : Int;
+      tempDeltaQ : Real;
+      tempActualQ : Real;
+   END_VAR
+
+   VAR CONSTANT 
+      MAXIMUM_REAL : Real := 3.4E+38;
+      MINIMUM_REAL : Real := -3.4E+38;
+      INDEX_DATATABLE_START : Int := 1;
+      INDEX_DATATABLE_ZERO : Int := 100;
+      INDEX_DATATABLE_END : Int := 200;
+      DEFAULT_INDEX : Int := 0;
+      DEFAULT_VELOCITY : Real := 0.0;
+      DEFAULT_QOUTPUT : Real := 0.0;
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_VCharEditorDisplayVChar
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Displaying VChar on HMI
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 17.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	
+	//Preset data
+	#hmiConnection.HmiData.VChar.HMI_VChar_MaxQOutput := #MINIMUM_REAL;
+	#hmiConnection.HmiData.VChar.HMI_VChar_MinQOutput := #MAXIMUM_REAL;
+	#hmiConnection.HmiData.VChar.HMI_VCHar_MaxVelocity := #MINIMUM_REAL;
+	#hmiConnection.HmiData.VChar.HMI_VChar_MinVelocity := #MAXIMUM_REAL;
+	
+	//Get VChar data (min/max)
+	FOR #tempIndex := 0 TO #displayVChar.MaxIdx DO
+	  //Check QOutput
+	  IF (#displayVChar.QOutput[#tempIndex] > #hmiConnection.HmiData.VChar.HMI_VChar_MaxQOutput)
+	  THEN
+	    #hmiConnection.HmiData.VChar.HMI_VChar_MaxQOutput := #displayVChar.QOutput[#tempIndex];
+	  END_IF;
+	  IF (#displayVChar.QOutput[#tempIndex] < #hmiConnection.HmiData.VChar.HMI_VChar_MinQOutput)
+	  THEN
+	    #hmiConnection.HmiData.VChar.HMI_VChar_MinQOutput := #displayVChar.QOutput[#tempIndex];
+	  END_IF;
+	  //Check velocity
+	  IF (#displayVChar.Velocity[#tempIndex] > #hmiConnection.HmiData.VChar.HMI_VCHar_MaxVelocity)
+	  THEN
+	    #hmiConnection.HmiData.VChar.HMI_VCHar_MaxVelocity := #displayVChar.Velocity[#tempIndex];
+	  END_IF;
+	  IF (#displayVChar.Velocity[#tempIndex] < #hmiConnection.HmiData.VChar.HMI_VChar_MinVelocity)
+	  THEN
+	    #hmiConnection.HmiData.VChar.HMI_VChar_MinVelocity := #displayVChar.Velocity[#tempIndex];
+	  END_IF;
+	END_FOR;
+	
+	//Calculate DeltaQ for HMI display
+	#tempDeltaQ := (#hmiConnection.HmiData.VChar.HMI_VChar_MaxQOutput - #hmiConnection.HmiData.VChar.HMI_VChar_MinQOutput) / (#INDEX_DATATABLE_END - 1);
+	//Calculate display points for HMI
+	FOR #tempIndex := #INDEX_DATATABLE_START TO #INDEX_DATATABLE_END DO
+	  //Do calculation
+	  #tempActualQ := #hmiConnection.HmiData.VChar.HMI_VChar_MinQOutput + (#tempDeltaQ * (#tempIndex - #INDEX_DATATABLE_START));
+	  IF (#tempIndex = #INDEX_DATATABLE_START)
+	  THEN
+	    #hmiConnection.HmiData.VChar.HMI_VChar[#tempIndex] := #displayVChar.Velocity[0];
+	  ELSE
+	    //Search for VChar segment
+	    #tempIndex2 := 0;
+	    WHILE ((#tempIndex2 < #displayVChar.MaxIdx)
+	      AND NOT ((#displayVChar.QOutput[#tempIndex2] <= #tempActualQ)
+	      AND (#tempActualQ <= #displayVChar.QOutput[#tempIndex2 + 1])))
+	    DO
+	      #tempIndex2 := #tempIndex2 + 1;
+	    END_WHILE;
+	    //Calculate interpolated value
+	    IF (#tempActualQ <= #hmiConnection.HmiData.VChar.HMI_VChar_MaxQOutput)
+	    THEN
+	      //Chack calculation, if possible
+	      IF ((#displayVChar.QOutput[#tempIndex2 + 1] - #displayVChar.QOutput[#tempIndex2]) <> 0.0)
+	      THEN
+	        //Calcualte interpolation point
+	        #hmiConnection.HmiData.VChar.HMI_VChar[#tempIndex] :=
+	        #displayVChar.Velocity[#tempIndex2] +
+	        ((#displayVChar.Velocity[#tempIndex2 + 1] - #displayVChar.Velocity[#tempIndex2]) /
+	        (#displayVChar.QOutput[#tempIndex2 + 1] - #displayVChar.QOutput[#tempIndex2])) *
+	        (#tempActualQ - #displayVChar.QOutput[#tempIndex2]);
+	      ELSE
+	        //Take last value
+	        #hmiConnection.HmiData.VChar.HMI_VChar[#tempIndex] := #hmiConnection.HmiData.VChar.HMI_VChar[#tempIndex - 1];
+	      END_IF;
+	    ELSE
+	      //Take maximum value
+	      #hmiConnection.HmiData.VChar.HMI_VChar[#tempIndex] := #hmiConnection.HmiData.VChar.HMI_VCHar_MaxVelocity;
+	    END_IF;
+	  END_IF;
+	END_FOR;
+	
+	//Display VChar on trend view
+	#hmiConnection.HmiData.VChar.HMI_VChar_TrendTransfer := W#16#8001;
+	
+END_FUNCTION
+

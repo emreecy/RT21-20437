@@ -1,0 +1,37 @@
+﻿FUNCTION "SimaHydTO_GetRealArrayBounds" : Void
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_OUTPUT 
+      lowerBound : DInt;
+      upperBound : DInt;
+   END_VAR
+
+   VAR_IN_OUT 
+      arrayOfReal : Array[*] of Real;
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_VCharEditorDisplayVChar
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Check array dimensions
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 25.10.2019 ArSc             First released version
+	//=============================================================================
+	
+	
+	#lowerBound := (LOWER_BOUND(ARR := #arrayOfReal, DIM := 1));
+	#upperBound := (UPPER_BOUND(ARR := #arrayOfReal, DIM := 1));
+	
+END_FUNCTION
+

@@ -1,0 +1,39 @@
+﻿FUNCTION "SimaHydTO_GetAxisToData_PosAxis" : "SimaHydTO_typeHMIConnectionAxisToData"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      axisTO {InstructionName := 'TO_PositioningAxis'; LibVersion := '4.0'} : TO_PositioningAxis;
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHyd_AxisBasics
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  Motion Control Library V4.0
+	//Requirements:  S7-1500(T)
+	//Functionality: Get axis data of TO_PositioningAxis
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 20.05.2019 ArSc             First released version
+	//=============================================================================
+	
+	
+	//-----------------------------------------------------------------------------
+	//Write axis data
+	//-----------------------------------------------------------------------------
+	#SimaHydTO_GetAxisToData_PosAxis.statusWord := #axisTO.StatusWord;
+	#SimaHydTO_GetAxisToData_PosAxis.warningWord := #axisTO.WarningWord;
+	#SimaHydTO_GetAxisToData_PosAxis.errorWord := #axisTO.ErrorWord;
+	#SimaHydTO_GetAxisToData_PosAxis.errorDetail.number := #axisTO.ErrorDetail.Number;
+	#SimaHydTO_GetAxisToData_PosAxis.errorDetail.reaction := #axisTO.ErrorDetail.Reaction;
+	
+	
+END_FUNCTION
+

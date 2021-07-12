@@ -1,0 +1,68 @@
+﻿FUNCTION "LSimaHydTO_GetPosAxisData" : Void
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      axisTO {InstructionName := 'TO_PositioningAxis'; LibVersion := '4.0'} : TO_PositioningAxis;
+   END_VAR
+
+   VAR_OUTPUT 
+      statusWord : DWord;
+      errorWord : DWord;
+      errorDetail : "LSimaHydTO_typeErrorDetail";
+      velocity : LReal;
+      acceleration : LReal;
+      position : LReal;
+      actualSpeed : LReal;
+      actualVelocity : LReal;
+      actualAcceleration : LReal;
+      actualPosition : LReal;
+      referenceSpeed : LReal;
+      positionLimits_SW {InstructionName := 'TO_Struct_PositionLimitsSW'; LibVersion := '4.0'} : TO_Struct_PositionLimitsSW;
+      dynamicLimits : "LSimaHydTO_typeDynamicLimits";
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	#statusWord := #axisTO.StatusWord;
+	#errorWord := #axisTO.ErrorWord;
+	#velocity := #axisTO.Velocity;
+	#acceleration := #axisTO.Acceleration;
+	#position := #axisTO.Position;
+	#actualSpeed := #axisTO.ActualSpeed;
+	#actualVelocity := #axisTO.ActualVelocity;
+	#actualAcceleration := #axisTO.#ActualAcceleration;
+	#actualPosition := #axisTO.ActualPosition;
+	#referenceSpeed := #axisTO.Actor.DriveParameter.ReferenceSpeed;
+	#errorDetail.Number := #axisTO.ErrorDetail.Number;
+	#errorDetail.Reaction := #axisTO.ErrorDetail.Reaction;
+	//software limit switches
+	#positionLimits_SW.Active := #axisTO.PositionLimits_SW.Active;
+	#positionLimits_SW.MaxPosition := #axisTO.PositionLimits_SW.MaxPosition;
+	#positionLimits_SW.MinPosition := #axisTO.PositionLimits_SW.MinPosition;
+	#dynamicLimits.MaxVelocity := MIN(IN1 := #axisTO.DynamicLimits.MaxVelocity, IN2 := #axisTO.DynamicLimits.Velocity);
+	#dynamicLimits.MaxAcceleration := #axisTO.DynamicLimits.MaxAcceleration;
+	#dynamicLimits.MaxDeceleration := #axisTO.DynamicLimits.MaxDeceleration;
+	#dynamicLimits.MaxJerk := #axisTO.DynamicLimits.MaxJerk;
+	
+	
+END_FUNCTION
+

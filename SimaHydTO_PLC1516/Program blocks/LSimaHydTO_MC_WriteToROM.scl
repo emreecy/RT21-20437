@@ -1,0 +1,155 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_MC_WriteToROM"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      execute : Bool;
+      parameter : Int;
+   END_VAR
+
+   VAR_OUTPUT 
+      busy { ExternalWritable := 'False'} : Bool;
+      done { ExternalWritable := 'False'} : Bool;
+      commandAborted { ExternalWritable := 'False'} : Bool;
+      error { ExternalWritable := 'False'} : Bool;
+      errorID { ExternalWritable := 'False'} : Int;
+   END_VAR
+
+   VAR_IN_OUT 
+      axis : "LSimaHydTO_typeAxisData";
+   END_VAR
+
+   VAR 
+      statState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statExecuteOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBusyWrit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBusy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRetVal { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_VAR
+
+   VAR_TEMP 
+      tempVarParameter : Variant;
+   END_VAR
+
+   VAR CONSTANT 
+      STATE_IDLE : DInt := 0;
+      LAST_PARAM : DInt := 10;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: Write parameter from RAM into ROM 
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	IF #execute AND NOT #statExecuteOld THEN
+	  #done := FALSE;
+	  #statBusy := TRUE;
+	  #statBusyWrit := FALSE;
+	  #error := FALSE;
+	  #errorID := 0;
+	  IF #parameter = 0 OR #parameter = 1 THEN
+	    #statState := 1;
+	  ELSE
+	    #statState := #parameter;
+	  END_IF;
+	END_IF;
+	IF #statBusy THEN
+	  
+	  CASE #statState OF
+	      
+	    1: // actor
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.Actor, BUSY => #statBusyWrit, DSTBLK => #axis.Actor);
+	      
+	      
+	    2: // valve characteristic
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.ValveCharacteristic, BUSY => #statBusyWrit, DSTBLK => #axis.ValveCharacteristic);
+	      
+	      
+	    3: // force limits
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.ForceLimits, BUSY => #statBusyWrit, DSTBLK => #axis.ForceLimits);
+	      
+	      
+	    4: // A-transducer
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.Pressure_A_Transducer, BUSY => #statBusyWrit, DSTBLK => #axis.Pressure_A_Transducer);
+	      
+	      
+	    5: // B-transducer
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.Pressure_B_Transducer, BUSY => #statBusyWrit, DSTBLK => #axis.Pressure_B_Transducer);
+	      
+	      
+	    6: // position control
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.PositionControl, BUSY => #statBusyWrit, DSTBLK => #axis.PositionControl);
+	      
+	      
+	    7: // force control
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.ForceControl, BUSY => #statBusyWrit, DSTBLK => #axis.ForceControl);
+	      
+	      
+	    8: // dynamic axis model
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.DynamicAxisModel, BUSY => #statBusyWrit, DSTBLK => #axis.DynamicAxisModel);
+	      
+	      
+	    9: // smoothing filter
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.SmoothingFilter, BUSY => #statBusyWrit, DSTBLK => #axis.SmoothingFilter);
+	      
+	      
+	    10: // name
+	      
+	      #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #axis.Name, BUSY => #statBusyWrit, DSTBLK => #axis.Name);
+	      
+	      
+	    ELSE
+	      #statState := #STATE_IDLE;
+	      #statBusy := FALSE;
+	  END_CASE;
+	  
+	  IF NOT #statBusyWrit THEN
+	    IF #statRetVal = 0 THEN
+	      IF #parameter = 0 AND #statState < #LAST_PARAM THEN
+	        #statState := 1 + #statState;
+	      ELSE
+	        #statBusy := false;
+	        #done := TRUE;
+	      END_IF;
+	    ELSE
+	      #statBusy := FALSE;
+	      #error := TRUE;
+	      #errorID := #statRetVal;
+	      #statState := #STATE_IDLE;
+	    END_IF;
+	  END_IF;
+	ELSIF NOT #execute THEN
+	  #done := FALSE;
+	  #error := FALSE;
+	  #errorID := 0;
+	END_IF;
+	#statExecuteOld := #execute;
+	#busy := #statBusy;
+	
+END_FUNCTION_BLOCK
+

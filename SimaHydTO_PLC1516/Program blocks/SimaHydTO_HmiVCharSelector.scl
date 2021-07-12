@@ -1,0 +1,168 @@
+﻿FUNCTION_BLOCK "SimaHydTO_HmiVCharSelector"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      command { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_typeHMIConnectionVCharSelectorCommand";
+   END_VAR
+
+   VAR_IN_OUT 
+      status : "SimaHydTO_typeHMIConnectionVCharSelectorStatus";
+      vCharArray : Array[*] of "SimaHydTO_typeVCharArray";
+   END_VAR
+
+   VAR 
+      statFirstRunDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statActualVCharIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statArrayMinIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statArrayMaxIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPreviousObjectOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statNextObjectOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statExecuteDirectIndexSelectionOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      tempVariant : Variant;
+      tempErrorVariant : Int;
+      tempDbAny : DB_ANY;
+      tempVCharData : REF_TO "LSimaHydTO_typeVCharData";
+      tempIndexChanged : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      ERROR_VCHAR_INDEX : Int := 0;
+      ERROR_SELECTED_VCHAR : DB_ANY := 0;
+      ERROR_SELECTED_VCHAR_INTEGER : UInt := 0;
+      ERROR_SELECTED_VCHAR_NAME : WString := WSTRING#'';
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_HMI
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Selection of VChar (valve characteristics) controlled via HMI
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 12.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	
+	//Array detection and initialization
+	IF (#statFirstRunDone = False)
+	THEN
+	  //Get MIN and MAX of array indices
+	  #statArrayMinIndex := DINT_TO_INT(LOWER_BOUND(ARR := #vCharArray, DIM := 1));
+	  #statArrayMaxIndex := DINT_TO_INT(UPPER_BOUND(ARR := #vCharArray, DIM := 1));
+	  //Set default value of actual axis index
+	  #statActualVCharIndex := #statArrayMinIndex;
+	  //Mark first run of function block
+	  IF #vCharArray[#statActualVCharIndex].initialized THEN
+	    #statFirstRunDone := True;
+	    #tempIndexChanged := TRUE;
+	  END_IF;
+	  
+	ELSE
+	  //Select axis (in axis data array)
+	  //Previous axis
+	  IF (#command.previousObject
+	    AND  NOT #statPreviousObjectOld)
+	  THEN
+	    //Decrement actual axis index
+	    #statActualVCharIndex := #statActualVCharIndex - INT#1;
+	    //Check index minimum
+	    IF (#statActualVCharIndex < #statArrayMinIndex)
+	    THEN
+	      //Select last axis by index
+	      #statActualVCharIndex := #statArrayMaxIndex;
+	    END_IF;
+	    #tempIndexChanged := TRUE;
+	  //Next axis  
+	  ELSIF (#command.nextObject
+	    AND NOT #statNextObjectOld)
+	  THEN
+	    //Increment actual axis index
+	    #statActualVCharIndex := #statActualVCharIndex + INT#1;
+	    //Check index minimum
+	    IF (#statActualVCharIndex > #statArrayMaxIndex)
+	    THEN
+	      //Select first axis by index
+	      #statActualVCharIndex := #statArrayMinIndex;
+	    END_IF;
+	    #tempIndexChanged := TRUE;
+	  //Direct selection
+	  ELSIF (#command.executeDirectIndexSelection
+	    AND NOT #statExecuteDirectIndexSelectionOld)
+	  THEN
+	    IF ((#command.directIndexSelection >= #statArrayMinIndex)
+	      AND (#command.directIndexSelection <= #statArrayMaxIndex))
+	    THEN
+	      //Set axis index directly
+	      #statActualVCharIndex := DINT_TO_INT(#command.directIndexSelection);
+	      #tempIndexChanged := TRUE;
+	    END_IF;
+	  END_IF;
+	END_IF;
+	
+	
+	IF (#statFirstRunDone)
+	THEN
+	  //Write function block output
+	  #status.actualVCharIndex := #statActualVCharIndex;
+	  IF #tempIndexChanged  THEN
+	    //Get VChar data
+	    #tempDbAny := #vCharArray[#status.actualVCharIndex].VChar_DB;
+	    #tempVariant := DB_ANY_TO_VARIANT(in := #tempDbAny, err => #tempErrorVariant);
+	    
+	    IF TypeOf(#tempVariant) = LSimaHydTO_typeVCharData THEN
+	      #tempVCharData ?= #tempVariant;
+	      
+	      #status.selectedVChar := #vCharArray[#status.actualVCharIndex].VChar_DB;
+	      #status.selectedVCharName := #tempVCharData^.Name;
+	      #status.selectedVCharInteger := DB_ANY_TO_UINT(#status.selectedVChar);
+	      
+	      //Write function block output
+	      #status.dataError := False;
+	      #status.dataValid := True;
+	      
+	    ELSE
+	      //error handling
+	      #status.dataError := True;
+	      #status.dataValid := False;
+	      
+	      // #actualVCharIndex := #ERROR_VCHAR_INDEX;
+	      #status.selectedVChar := #ERROR_SELECTED_VCHAR;
+	      #status.selectedVCharInteger := #ERROR_SELECTED_VCHAR_INTEGER;
+	      #status.selectedVCharName := #ERROR_SELECTED_VCHAR_NAME;
+	      
+	    END_IF;
+	    #tempIndexChanged := FALSE;
+	  END_IF;
+	ELSE
+	  //Write function block output
+	  #status.dataError := False;
+	  #status.dataValid := False;
+	END_IF;
+	
+	
+	//-----------------------------------------------------------------------------
+	//Function block system functions
+	//-----------------------------------------------------------------------------
+	
+	//Save signals for edge control
+	#statPreviousObjectOld := #command.previousObject;
+	#statNextObjectOld := #command.nextObject;
+	#statExecuteDirectIndexSelectionOld := #command.executeDirectIndexSelection;
+	//Save AxisIndex for edge control
+	
+	
+	
+END_FUNCTION_BLOCK
+

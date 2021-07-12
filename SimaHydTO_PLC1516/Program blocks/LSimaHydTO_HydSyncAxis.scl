@@ -1,0 +1,36 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_HydSyncAxis"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      axisTO {InstructionName := 'TO_SynchronousAxis'; LibVersion := '4.0'} : TO_SynchronousAxis;
+      axisData : "LSimaHydTO_typeAxisData";
+      instHydAxisFB : "LSimaHydTO_HydAxis";
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	//Call function block
+	#instHydAxisFB(axisTO := #axisTO,
+	                   axisData := #axisData);
+	
+END_FUNCTION_BLOCK
+

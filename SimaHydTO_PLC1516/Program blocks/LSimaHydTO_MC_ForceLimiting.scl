@@ -1,0 +1,260 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_MC_ForceLimiting"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      execute : Bool;
+      forceLimitingProfile : UInt;
+      mode : DInt;
+      forceProfileMode : DInt;
+      conditionMode : DInt := 1;
+      compareMode : DInt := 1;
+      conditionValue : LReal;
+      forceValue : LReal;
+      forceDerivedValue : LReal;
+      clampingMonitoring : Bool;
+      followingErrorDeviation : LReal;
+   END_VAR
+
+   VAR_OUTPUT 
+      done { ExternalWritable := 'False'} : Bool;
+      forceLimited { ExternalWritable := 'False'} : Bool;
+      InLimitation { ExternalWritable := 'False'} : Bool;
+      inClamping { ExternalWritable := 'False'} : Bool;
+      busy { ExternalWritable := 'False'} : Bool;
+      commandAborted { ExternalWritable := 'False'} : Bool;
+      error { ExternalWritable := 'False'} : Bool;
+      errorID { ExternalWritable := 'False'} : Word;
+   END_VAR
+
+   VAR_IN_OUT 
+      Axis : "LSimaHydTO_typeAxisData";
+   END_VAR
+
+   VAR 
+      statFBState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statCommandID { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UDInt;
+      statCmdState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statExecuteOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      NO_ERROR : Word := 16#0000;
+      STATE_IDLE : DInt;
+      STATE_FIRST_CYCLE : DInt := 10;
+      STATE_BUSY : DInt := 20;
+      STATE_DONE : DInt := 30;
+      STATE_COMMAND_ABORTED : DInt := 40;
+      STATE_ERROR : DInt := 100;
+      MOTION_STATE_NOT_EXISTEND : Word := 16#0000;
+      MOTION_STATE_BUFFERED_OR_MOTION : Word := 16#0001;
+      MOTION_STATE_EXECUTED : Word := 16#0010;
+      MOTION_STATE_ABORTED : Word := 16#0020;
+      MOTION_STATE_ERROR : Word := 16#8000;
+      NO_ERROR_REACTION : DInt := 0;
+      ALARM_AXIS_ERROR_OCCURED : Word := 16#8001;
+      ALARM_WRONG_MODE : Word := 16#800A;
+      ALARM_AXIS_DISABLED : Word := 16#800F;
+      ALARM_FORCE_PROFILE_MODE : Word := 16#80B1;
+      ALARM_CONDITION_MODE : Word := 16#80B2;
+      ALARM_FORCE_PROFILE : Word := 16#80B3;
+      ALARM_COMPARE_MODE : Word := 16#80B4;
+      ALARM_FORCE_DERIVED_VALUE : Word := 16#80B5;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library: LSimaHydTO
+	//Tested with: S7-15xx
+	//Engineering: TIA Portal V15
+	//Restrictions: -
+	//Requirements: S7-1500 (SW 2.5)
+	//Functionality: function to activate/deactivate the force/pressure
+	//               limiting of your axis.
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	// ----------------------------------------------------------------------
+	// start
+	// ----------------------------------------------------------------------
+	// rising edge of execute starts functionality
+	IF #execute AND NOT #statExecuteOld THEN
+	  // initialization
+	  #done := FALSE;
+	  #commandAborted := FALSE;
+	  #forceLimited := FALSE;
+	  #busy := FALSE;
+	  #error := FALSE;
+	  #errorID := #NO_ERROR;
+	  #statFBState := #STATE_FIRST_CYCLE;
+	END_IF;
+	
+	// ----------------------------------------------------------------------
+	// busy
+	// ----------------------------------------------------------------------
+	// ------------------------------------------------------------------
+	// user implementation begins here
+	// example of a state machine
+	// ------------------------------------------------------------------
+	CASE #statFBState OF
+	  #STATE_FIRST_CYCLE:
+	    // ==================================================================
+	    // This state runs just one time after a rising edge on execute and
+	    // calls the function to start the motion.
+	    // Get a commandId and buffer it for tracking the command in the
+	    // following state STATE_BUSY
+	    // ==================================================================
+	    // 
+	    
+	    #commandAborted := FALSE;
+	    IF #mode < 0 OR #mode > 2 THEN
+	      #error := TRUE;
+	      #errorID := #ALARM_WRONG_MODE;
+	      #statFBState := #STATE_ERROR;
+	    ELSIF #mode <> 0 AND (#forceProfileMode < 0 OR #forceProfileMode > 2) THEN
+	      #error := TRUE;
+	      #errorID := #ALARM_FORCE_PROFILE_MODE;
+	      #statFBState := #STATE_ERROR;
+	    ELSIF #mode = 2 AND (#conditionMode < 1 OR #conditionMode > 3) THEN
+	      #error := TRUE;
+	      #errorID := #ALARM_CONDITION_MODE;
+	      #statFBState := #STATE_ERROR;
+	    ELSIF #mode = 2 AND #conditionMode > 1 AND (#compareMode < 1 OR #compareMode > 2) THEN
+	      #error := TRUE;
+	      #errorID := #ALARM_COMPARE_MODE;
+	      #statFBState := #STATE_ERROR;
+	    ELSIF #mode > 0 AND #forceProfileMode = 0 AND #forceDerivedValue <= 0.0 THEN
+	      #error := TRUE;
+	      #errorID := #ALARM_FORCE_DERIVED_VALUE;
+	      #statFBState := #STATE_ERROR;
+	    ELSIF NOT #Axis.StatusActor.Enabled THEN
+	      #error := TRUE;
+	      #errorID := #ALARM_AXIS_DISABLED;
+	      #statFBState := #STATE_ERROR;
+	    ELSIF #Axis.#ErrorWord <> 0 AND #Axis.ErrorDetail.Reaction <> #NO_ERROR_REACTION THEN
+	      #error := TRUE;
+	      #errorID := #ALARM_AXIS_ERROR_OCCURED;
+	      #statFBState := #STATE_ERROR;
+	    ELSE
+	      
+	      IF #mode <> 0 AND #forceProfileMode > 0 THEN
+	        // check force profile DB 
+	        IF #forceLimitingProfile > 0 THEN
+	          #Axis.StatusForceProfile.ActualProfile := #forceLimitingProfile;
+	        ELSE
+	          #Axis.StatusForceProfile.ActualProfile := 0;
+	          #error := TRUE;
+	          #errorID := #ALARM_FORCE_PROFILE;
+	          #statFBState := #STATE_ERROR;
+	          
+	        END_IF;
+	      ELSE
+	        #Axis.StatusForceProfile.ActualProfile := 0;
+	      END_IF;
+	      
+	      IF #statFBState <> #STATE_ERROR THEN
+	        
+	        // call function for force limiting        
+	        #statCommandID := "LSimaHydTO_GetCommandID"(#Axis);
+	        #Axis.Internal.Control.ForceCommand.commandID := #statCommandID;
+	        #Axis.Internal.Control.ForceCommand.compareMode := #compareMode;
+	        #Axis.Internal.Control.ForceCommand.conditionMode := #conditionMode;
+	        #Axis.Internal.Control.ForceCommand.conditionValue := #conditionValue;
+	        #Axis.Internal.Control.ForceCommand.forceRamp := #forceDerivedValue;
+	        #Axis.Internal.Control.ForceCommand.forceProfileMode := #forceProfileMode;
+	        #Axis.Internal.Control.ForceCommand.forceValue := #forceValue;
+	        #Axis.Internal.Control.ForceCommand.mode := #mode;
+	        #Axis.Internal.Control.ForceCommand.velocityLimitingValue := 1.0E+12;
+	        
+	        #Axis.Internal.Control.ForceCommand.clampingMonitoring := #clampingMonitoring;
+	        #Axis.Internal.Control.ForceCommand.followingErrorDeviation := #followingErrorDeviation;
+	        
+	        #Axis.Internal.Control.ExecuteForceLimiting := TRUE;
+	        #busy := TRUE;
+	        #statFBState := #STATE_BUSY;
+	      END_IF;
+	    END_IF;
+	    
+	    
+	  #STATE_BUSY:
+	    // =================================================================
+	    // The  command is identified by the commandId.
+	    // The FB remains in this state as long as the pos functionality is active.
+	    // ==================================================================
+	    #statCmdState := "LSimaHydTO_GetAxisForceCommandState"(commandID := #statCommandID, axis := #Axis);
+	    IF #statCmdState = #MOTION_STATE_EXECUTED THEN
+	      #busy := FALSE;
+	      #done := TRUE;
+	      #statFBState := #STATE_DONE;
+	      
+	    ELSIF #statCmdState <> #MOTION_STATE_BUFFERED_OR_MOTION OR
+	      NOT #Axis.StatusActor.Enabled OR #Axis.#ErrorWord <> 0
+	    THEN
+	      #commandAborted := TRUE;
+	      #busy := FALSE;
+	      #statFBState := #STATE_COMMAND_ABORTED;
+	      
+	    END_IF;
+	    
+	    // -------------------------------------------------------------------------
+	    // state analysis (no function)
+	    // -------------------------------------------------------------------------
+	  #STATE_IDLE:
+	    // ======================================================================
+	    ;
+	    
+	  #STATE_DONE:
+	    // ======================================================================
+	    // output for one cycle minimum
+	    IF NOT #execute THEN
+	      #statFBState := #STATE_IDLE;
+	      #done := FALSE;
+	    END_IF;
+	    
+	  #STATE_COMMAND_ABORTED:
+	    // ======================================================================
+	    // reset commandAborted, output for one cycle minimum
+	    IF NOT #execute THEN
+	      #commandAborted := FALSE;
+	      #statFBState := #STATE_IDLE;
+	    END_IF;
+	    
+	  #STATE_ERROR:
+	    // ======================================================================
+	    // reset error, output for one cycle minimum
+	    IF NOT #execute THEN
+	      #error := FALSE;
+	      #errorID := #NO_ERROR;
+	      #statFBState := #STATE_IDLE;
+	    END_IF;
+	    
+	    
+	  ELSE
+	    // ======================================================================
+	    // when FB is busy...
+	    ;
+	END_CASE;
+	
+	// -------------------------------------------------------------------------
+	// always executed
+	// -------------------------------------------------------------------------
+	#forceLimited := #Axis.StatusForce.ForceLimitingCommand;
+	#InLimitation := #Axis.StatusForce.InLimitation;
+	#inClamping := #Axis.StatusForce.InClamping;
+	
+	// edge detection
+	#statExecuteOld := #execute;
+	
+	// ------------------------------------------------------------------------------
+END_FUNCTION_BLOCK
+

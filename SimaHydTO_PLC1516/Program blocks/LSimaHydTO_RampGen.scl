@@ -1,0 +1,94 @@
+﻿FUNCTION "LSimaHydTO_RampGen" : Void
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      inputValue : LReal;
+      acceleration : LReal;
+      deceleration : LReal;
+      sampleTime : LReal;
+   END_VAR
+
+   VAR_OUTPUT 
+      active : Bool;
+   END_VAR
+
+   VAR_IN_OUT 
+      outputValue : LReal;
+   END_VAR
+
+   VAR_TEMP 
+      tempUpNullStep : LReal;
+      tempStepUp : LReal;
+      tempStepDown : LReal;
+      tempAuxOutput : LReal;
+      tempAuxStep : LReal;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	#tempStepUp := #acceleration * #sampleTime;
+	#tempStepDown := #deceleration * #sampleTime;
+	#tempAuxOutput := #outputValue;
+	IF #inputValue >= 0.0 AND #tempAuxOutput < 0.0 OR
+	  #inputValue <= 0.0 AND #tempAuxOutput > 0.0 THEN  // bigger as 0 
+	  IF ABS(#tempAuxOutput) >= #tempStepDown THEN
+	    IF #tempAuxOutput > 0 THEN  //positive
+	      #tempAuxOutput := #tempAuxOutput - #tempStepDown;
+	    ELSE  //negative
+	      #tempAuxOutput := #tempAuxOutput + #tempStepDown;
+	    END_IF;
+	    #active := TRUE;
+	  ELSE
+	    #tempUpNullStep := #tempStepUp * (1 - ABS(#tempAuxOutput) / #tempStepDown);
+	    IF ABS(#inputValue) > #tempUpNullStep THEN  //RG active
+	      IF #inputValue > 0 THEN  //positive
+	        #tempAuxOutput := #tempUpNullStep;
+	      ELSE  //negative
+	        #tempAuxOutput := - #tempUpNullStep;
+	      END_IF;
+	      #active := TRUE;
+	    ELSE
+	      #tempAuxOutput := #inputValue;
+	      #active := FALSE;
+	    END_IF;
+	  END_IF;
+	ELSE
+	  IF ABS(#inputValue) > ABS(#tempAuxOutput) THEN  //up
+	    #tempAuxStep := #tempStepUp;
+	  ELSE
+	    #tempAuxStep := - #tempStepDown;
+	  END_IF;
+	  IF ABS(#inputValue - #tempAuxOutput) > ABS(#tempAuxStep) THEN  //RG active
+	    IF #inputValue > 0 THEN  //positive
+	      #tempAuxOutput := #tempAuxOutput + #tempAuxStep;
+	    ELSE  //negative
+	      #tempAuxOutput := #tempAuxOutput - #tempAuxStep;
+	    END_IF;
+	    #active := TRUE;
+	  ELSE  //RG inactive
+	    #tempAuxOutput := #inputValue;
+	    #active := FALSE;
+	  END_IF;
+	END_IF;
+	#outputValue := #tempAuxOutput;
+END_FUNCTION
+

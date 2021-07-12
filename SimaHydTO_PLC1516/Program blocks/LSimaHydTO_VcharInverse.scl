@@ -1,0 +1,78 @@
+﻿FUNCTION "LSimaHydTO_VcharInverse" : LReal
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      qOutput : LReal;
+   END_VAR
+
+   VAR_IN_OUT 
+      VChar : "LSimaHydTO_typeVCharData";
+   END_VAR
+
+   VAR_TEMP 
+      tempQOutput : LReal;
+      tempV0 : LReal;
+      tempV1 : LReal;
+      tempQ0 : LReal;
+      tempQ1 : LReal;
+      tempIdx : DInt;
+      tempBegIdx : DInt;
+      tempEndIdx : DInt;
+      tempRetValue : LReal;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	#tempBegIdx := 0;
+	#tempEndIdx := #VChar.MaxIdx;
+	#tempQOutput := LIMIT(MN := #VChar.QOutput[#tempBegIdx], IN := #qOutput, MX := #VChar.QOutput[#tempEndIdx]);
+	IF (#tempQOutput) < #VChar.ZeroZonePositive
+	  AND
+	  (#tempQOutput) > - ABS(#VChar.ZeroZoneNegative)
+	THEN
+	  #tempRetValue := 0.0;
+	ELSE
+	  WHILE (#tempEndIdx - #tempBegIdx) >= 2 DO
+	    #tempIdx := (#tempEndIdx + #tempBegIdx) / 2;
+	    IF (#VChar.QOutput[#tempIdx] >= #tempQOutput)
+	    THEN
+	      #tempEndIdx := #tempIdx;
+	    ELSE
+	      #tempBegIdx := #tempIdx;
+	    END_IF;
+	  END_WHILE;
+	  #tempV0 := #VChar.Velocity[#tempBegIdx];
+	  #tempV1 := #VChar.Velocity[#tempEndIdx];
+	  #tempQ0 := #VChar.QOutput[#tempBegIdx];
+	  #tempQ1 := #VChar.QOutput[#tempEndIdx];
+	  IF #tempQ0 = #tempQ1 THEN
+	    #tempRetValue := (#tempV0 + #tempV1) / 2.0;
+	  ELSE
+	    #tempRetValue := #tempV0 + (#tempV1 - #tempV0) * (#tempQOutput - #tempQ0) / (#tempQ1 - #tempQ0);
+	  END_IF;
+	END_IF;
+	#LSimaHydTO_VcharInverse := #tempRetValue; 
+	
+	
+END_FUNCTION
+

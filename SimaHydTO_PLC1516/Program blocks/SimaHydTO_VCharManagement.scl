@@ -1,0 +1,78 @@
+﻿FUNCTION_BLOCK "SimaHydTO_VCharManagement"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      hmiConnection : "SimaHydTO_typeHMIConnection";
+      axisData : "LSimaHydTO_typeAxisData";
+      vCharArray : Array[*] of "SimaHydTO_typeVCharArray";
+   END_VAR
+
+   VAR 
+      statSaveDBL { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statLoadDBL { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statEditOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statActivateOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statAbortOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statRestoreOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statApplayOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statDefaultAxisData { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_typeHMIConnectionParameterSettingsAxisData";
+      instMC_WriteToROM { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_MC_WriteToROM";
+      instMC_ReadFromROM { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_MC_ReadFromROM";
+      instVCharSelector { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_HmiVCharSelector";
+      statSaveOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      tempVariant : Variant;
+      tempErrorVariant : Int;
+      tempDbAny : DB_ANY;
+      tempVCharData : REF_TO "LSimaHydTO_typeVCharData";
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_VCharManagement
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Manipulate active VChar of selected hydraulic axis
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 17.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	  // Vchar selection
+	  #instVCharSelector(command:=#hmiConnection.ParameterSettings.Commands.VCharSelector,
+	                       status:=#hmiConnection.ParameterSettings.Status.VCharSelector,
+	                       vCharArray:=#vCharArray);
+	  
+	  
+	  IF #hmiConnection.ParameterSettings.Commands.ApplyVChar
+	    AND NOT #statApplayOld
+	    AND #hmiConnection.ParameterSettings.Status.VCharSelector.dataValid
+	  THEN
+	    #axisData.ValveCharacteristic.DB_NUMBER := #hmiConnection.ParameterSettings.Status.VCharSelector.selectedVChar;
+	    #hmiConnection.AxisSelector.Status.selectedVChar := #hmiConnection.ParameterSettings.Status.VCharSelector.selectedVChar;
+	    #hmiConnection.AxisSelector.Status.selectedVCharInteger := DB_ANY_TO_UINT(#hmiConnection.ParameterSettings.Status.VCharSelector.selectedVChar);
+	    
+	    
+	    #hmiConnection.ParameterSettings.AxisData.VCharName := #hmiConnection.ParameterSettings.Status.VCharSelector.selectedVCharName;
+	    #hmiConnection.ParameterSettings.AxisData.ValveCharacteristic.DB_NUMBER := #hmiConnection.ParameterSettings.Status.VCharSelector.selectedVChar;
+	    
+	    #hmiConnection.AxisSelector.Status.selectedVCharName := #hmiConnection.ParameterSettings.Status.VCharSelector.selectedVCharName;
+	    
+	    
+	    
+	  END_IF;
+	
+	#statApplayOld := #hmiConnection.ParameterSettings.Commands.ApplyVChar;
+	
+END_FUNCTION_BLOCK
+

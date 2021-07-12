@@ -1,0 +1,87 @@
+﻿FUNCTION "LSimaHydTO_CheckPlausibilityConfigQOutput" : Void
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      occupiedPoints : DInt;
+   END_VAR
+
+   VAR_OUTPUT 
+      fineRangeStepValue : Real;
+      coarseRangeStepValue : Real;
+      calcNumOfPoints : Int;
+   END_VAR
+
+   VAR_IN_OUT 
+      qOutputConfig : "LSimaHydTO_typeMeasurementQOutput";
+   END_VAR
+
+   VAR_TEMP 
+      tempOutputBegin : Real;
+      tempFreePoints : DInt;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	  
+	IF #qOutputConfig.enableMeasurement THEN
+	  #qOutputConfig.setpointForMovement := LIMIT(MN := #tempOutputBegin  // [%]
+	                                              , IN := #qOutputConfig.setpointForMovement
+	                                              , MX := 200.0  // [%]
+	  );
+	  
+	  
+	  //check increment settings ################################################
+	  #tempFreePoints := "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT" - #occupiedPoints;
+	  IF #tempFreePoints = 0 THEN
+	    #qOutputConfig.fineRange.maxQOutputValue := 0.0;
+	  ELSE
+	    #qOutputConfig.fineRange.maxQOutputValue := LIMIT(MN := #tempOutputBegin, IN := #qOutputConfig.fineRange.maxQOutputValue, MX := 200.0);
+	  END_IF;
+	  IF #qOutputConfig.fineRange.maxQOutputValue = #tempOutputBegin THEN
+	    #qOutputConfig.fineRange.numberOfPoints := 0;
+	    #fineRangeStepValue := 0.0;
+	  ELSE
+	    #qOutputConfig.fineRange.numberOfPoints := DINT_TO_INT(LIMIT(MN := 1, IN := #qOutputConfig.fineRange.numberOfPoints, MX := #tempFreePoints));
+	    #fineRangeStepValue := (#qOutputConfig.fineRange.maxQOutputValue - #tempOutputBegin) / #qOutputConfig.fineRange.numberOfPoints;
+	  END_IF;
+	  #tempFreePoints := #tempFreePoints - #qOutputConfig.fineRange.numberOfPoints;
+	  IF #tempFreePoints = 0 THEN
+	    #qOutputConfig.coarseRange.maxQOutputValue := #qOutputConfig.fineRange.maxQOutputValue;
+	  ELSE
+	    #qOutputConfig.coarseRange.maxQOutputValue := LIMIT(MN := #qOutputConfig.fineRange.maxQOutputValue, IN := #qOutputConfig.coarseRange.maxQOutputValue, MX := 200.0);
+	  END_IF;
+	  IF #qOutputConfig.coarseRange.maxQOutputValue = #qOutputConfig.fineRange.maxQOutputValue THEN
+	    #qOutputConfig.coarseRange.numberOfPoints := 0;
+	    #coarseRangeStepValue := 0.0;
+	  ELSE
+	    #qOutputConfig.coarseRange.numberOfPoints := DINT_TO_INT(LIMIT(MN := 1, IN := #qOutputConfig.coarseRange.numberOfPoints, MX := #tempFreePoints));
+	    #coarseRangeStepValue := (#qOutputConfig.coarseRange.maxQOutputValue - #qOutputConfig.fineRange.maxQOutputValue) / #qOutputConfig.coarseRange.numberOfPoints;
+	  END_IF;
+	  #calcNumOfPoints := #qOutputConfig.fineRange.numberOfPoints + #qOutputConfig.coarseRange.numberOfPoints;
+	ELSE
+	  #calcNumOfPoints := 0;
+	END_IF;
+	
+	
+END_FUNCTION
+

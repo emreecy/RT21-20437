@@ -1,0 +1,121 @@
+﻿FUNCTION_BLOCK "SimaHydTO_AdvancedAxisControl"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      hmiConnection : "SimaHydTO_typeHMIConnection";
+      axisData : "LSimaHydTO_typeAxisData";
+      axesArray : Array[*] of "SimaHydTO_typeAxesArray";
+   END_VAR
+
+   VAR 
+      statActualAxisIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statAxisIndexOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := -1;
+      instSimaHydTO_AxisAdvancedPosAxis { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_AxisAdvanced_PosAxis";
+      instSimaHydTO_AxisAdvancedSyncAxis { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_AxisAdvanced_SyncAxis";
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_AdvancedAxisControl
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Move selected axis
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 19.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	
+	//Check axis selection, if axis has changed
+	IF #hmiConnection.AxisSelector.Status.selectionChanged
+	  AND #hmiConnection.AxisSelector.Status.dataValid
+	THEN
+	  
+	  IF #statAxisIndexOld > -1 THEN  //save axis commands
+	    #axesArray[#statAxisIndexOld].advancedControl := #hmiConnection.AdvancedAxisControl.Command;
+	  END_IF;
+	  
+	  
+	  //Preset axis commands
+	  #statActualAxisIndex := #hmiConnection.AxisSelector.Status.actualAxisIndex;
+	  
+	  #hmiConnection.AdvancedAxisControl.Command := #axesArray[#statActualAxisIndex].advancedControl;
+	  #hmiConnection.AdvancedAxisControl.Command.haltExecute := FALSE;
+	  #hmiConnection.AdvancedAxisControl.Command.moveAbsoluteExecute := FALSE;
+	  #hmiConnection.AdvancedAxisControl.Command.moveRelativeExecute := FALSE;
+	  #statAxisIndexOld := #statActualAxisIndex;
+	END_IF;
+	
+	// workaround for missing dynamics
+	#hmiConnection.AdvancedAxisControl.Command.Acceleration := #hmiConnection.BasicAxisControl.Command.jogAcceleration;
+	#hmiConnection.AdvancedAxisControl.Command.Deceleration := #hmiConnection.BasicAxisControl.Command.jogDeceleration;
+	#hmiConnection.AdvancedAxisControl.Command.Jerk := #hmiConnection.BasicAxisControl.Command.jogJerk;
+	
+	
+	CASE #hmiConnection.AxisSelector.Status.selectedTypeOfAxis OF
+	    
+	  2: // positioning axis
+	    #instSimaHydTO_AxisAdvancedPosAxis(axis := #hmiConnection.AxisSelector.Status.selectedTO_Axis,
+	                                       moveRelativeExecute := #hmiConnection.AdvancedAxisControl.Command.moveRelativeExecute,
+	                                       moveRelativeDistance := #hmiConnection.AdvancedAxisControl.Command.moveRelativeDistance,
+	                                       moveAbsoluteExecute := #hmiConnection.AdvancedAxisControl.Command.moveAbsoluteExecute,
+	                                       moveAbsolutePosition := #hmiConnection.AdvancedAxisControl.Command.moveAbsolutePosition,
+	                                       moveAbsoluteDirection := #hmiConnection.AdvancedAxisControl.Command.moveAbsoluteDirection,
+	                                       haltExecute := #hmiConnection.AdvancedAxisControl.Command.haltExecute,
+	                                       haltAbortAcceleration := #hmiConnection.AdvancedAxisControl.Command.haltAbortAcceleration,
+	                                       Velocity := #hmiConnection.AdvancedAxisControl.Command.Velocity,
+	                                       Acceleration := #hmiConnection.AdvancedAxisControl.Command.Acceleration,
+	                                       Deceleration := #hmiConnection.AdvancedAxisControl.Command.Deceleration,
+	                                       Jerk := #hmiConnection.AdvancedAxisControl.Command.Jerk,
+	                                       moveRelativeDone => #hmiConnection.AdvancedAxisControl.Status.moveRelativeDone,
+	                                       moveRelativeBusy => #hmiConnection.AdvancedAxisControl.Status.moveRelativeBusy,
+	                                       moveAbsoluteDone => #hmiConnection.AdvancedAxisControl.Status.moveAbsoluteDone,
+	                                       moveAbsoluteBusy => #hmiConnection.AdvancedAxisControl.Status.moveAbsoluteBusy,
+	                                       haltDone => #hmiConnection.AdvancedAxisControl.Status.haltDone,
+	                                       haltBusy => #hmiConnection.AdvancedAxisControl.Status.haltBusy,
+	                                       commandAborted => #hmiConnection.AdvancedAxisControl.Status.commandAborted,
+	                                       error => #hmiConnection.AdvancedAxisControl.Status.error,
+	                                       errorID => #hmiConnection.AdvancedAxisControl.Status.errorID,
+	                                       statusID => #hmiConnection.AdvancedAxisControl.Status.statusID);
+	    
+	    
+	  3: // sync axis
+	    #instSimaHydTO_AxisAdvancedSyncAxis(axis := #hmiConnection.AxisSelector.Status.selectedTO_Axis,
+	                                        moveRelativeExecute := #hmiConnection.AdvancedAxisControl.Command.moveRelativeExecute,
+	                                        moveRelativeDistance := #hmiConnection.AdvancedAxisControl.Command.moveRelativeDistance,
+	                                        moveAbsoluteExecute := #hmiConnection.AdvancedAxisControl.Command.moveAbsoluteExecute,
+	                                        moveAbsolutePosition := #hmiConnection.AdvancedAxisControl.Command.moveAbsolutePosition,
+	                                        moveAbsoluteDirection := #hmiConnection.AdvancedAxisControl.Command.moveAbsoluteDirection,
+	                                        haltExecute := #hmiConnection.AdvancedAxisControl.Command.haltExecute,
+	                                        haltAbortAcceleration := #hmiConnection.AdvancedAxisControl.Command.haltAbortAcceleration,
+	                                        Velocity := #hmiConnection.AdvancedAxisControl.Command.Velocity,
+	                                        Acceleration := #hmiConnection.AdvancedAxisControl.Command.Acceleration,
+	                                        Deceleration := #hmiConnection.AdvancedAxisControl.Command.Deceleration,
+	                                        Jerk := #hmiConnection.AdvancedAxisControl.Command.Jerk,
+	                                        moveRelativeDone => #hmiConnection.AdvancedAxisControl.Status.moveRelativeDone,
+	                                        moveRelativeBusy => #hmiConnection.AdvancedAxisControl.Status.moveRelativeBusy,
+	                                        moveAbsoluteDone => #hmiConnection.AdvancedAxisControl.Status.moveAbsoluteDone,
+	                                        moveAbsoluteBusy => #hmiConnection.AdvancedAxisControl.Status.moveAbsoluteBusy,
+	                                        haltDone => #hmiConnection.AdvancedAxisControl.Status.haltDone,
+	                                        haltBusy => #hmiConnection.AdvancedAxisControl.Status.haltBusy,
+	                                        commandAborted => #hmiConnection.AdvancedAxisControl.Status.commandAborted,
+	                                        error => #hmiConnection.AdvancedAxisControl.Status.error,
+	                                        errorID => #hmiConnection.AdvancedAxisControl.Status.errorID,
+	                                        statusID => #hmiConnection.AdvancedAxisControl.Status.statusID);
+	    
+	    
+	  ELSE
+	    ; // not suported
+	    
+	END_CASE;
+	
+END_FUNCTION_BLOCK
+

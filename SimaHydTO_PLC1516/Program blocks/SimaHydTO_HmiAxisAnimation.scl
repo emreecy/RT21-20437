@@ -1,0 +1,84 @@
+﻿FUNCTION "SimaHydTO_HmiAxisAnimation" : Void
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      hmiConnection : "SimaHydTO_typeHMIConnection";
+      axisData : "LSimaHydTO_typeAxisData";
+   END_VAR
+
+   VAR_TEMP 
+      tempPositionLimitsSW : "LSimaHydTO_typePositionLimits";
+      tempTravelDistance : LReal;
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_HMI
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Transfer data from/to HMI to/from selected axis
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 12.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	
+	// 
+	IF #hmiConnection.AxisSelector.Status.dataValid 
+	THEN
+	  //Read data
+	  //Check data
+	  IF #axisData.DataInitialized = TRUE
+	  THEN
+	    //Calculate HMI data
+	    #tempPositionLimitsSW := #axisData.Internal.PositionLimits_SW;
+	    IF (#tempPositionLimitsSW.Active = True)
+	    THEN
+	      #hmiConnection.HmiData.MinPosition := #tempPositionLimitsSW.MinPosition;
+	      #hmiConnection.HmiData.MaxPosition := #tempPositionLimitsSW.MaxPosition;
+	      #tempTravelDistance := (#tempPositionLimitsSW.MaxPosition - #tempPositionLimitsSW.MinPosition);
+	      //Calculate percent value
+	      IF (#tempTravelDistance > 0.0)
+	      THEN
+	        #hmiConnection.HmiData.ActualPositionPercent := DINT_TO_INT(TRUNC(100.0 * ((#axisData.ActualPosition - #tempPositionLimitsSW.MinPosition) /
+	                                                            #tempTravelDistance)));
+	        
+	        #hmiConnection.HmiData.SafetyDistanceAnimation := #tempPositionLimitsSW.MinPosition + #hmiConnection.BasicAxisControl.ControlDirectOutput.safetyDistance;
+	
+	    
+	
+	      ELSE
+	          #hmiConnection.HmiData.ActualPositionPercent := 0;
+	          #hmiConnection.HmiData.SafetyDistanceAnimation := 0.0;
+	      END_IF;
+	    ELSE
+	      #hmiConnection.HmiData.MinPosition := 0.0;
+	      #hmiConnection.HmiData.MaxPosition := 0.0;
+	      #hmiConnection.HmiData.ActualPositionPercent := 0;
+	      #hmiConnection.HmiData.SafetyDistanceAnimation := 0.0;
+	      #hmiConnection.HmiData.selectedAxis := 0;
+	      #hmiConnection.HmiData.selectedAxisTO := 0;
+	    END_IF;
+	  END_IF;
+	  #hmiConnection.AxisData.Force := #axisData.Force;
+	  #hmiConnection.AxisData.Velocity := #axisData.Velocity;
+	  #hmiConnection.AxisData.Position := #axisData.Position;
+	  #hmiConnection.AxisData.ActualForce := #axisData.ActualForce;
+	  #hmiConnection.AxisData.ActualVelocity := #axisData.ActualVelocity;
+	  #hmiConnection.AxisData.ActualPosition := #axisData.ActualPosition;
+	  #hmiConnection.AxisData.Status_A_Transducer.PressureValue := #axisData.Status_A_Transducer.PressureValue;
+	  #hmiConnection.AxisData.Status_B_Transducer.PressureValue := #axisData.Status_B_Transducer.PressureValue;
+	  #hmiConnection.AxisData.StatusActor := #axisData.StatusActor;
+	  
+	END_IF;
+	
+END_FUNCTION
+

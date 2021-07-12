@@ -1,0 +1,201 @@
+﻿FUNCTION_BLOCK "SimaHydTO_HmiAxisSelector"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      selector : "SimaHydTO_typeHMIConnectionAxisSelector";
+      axesArray : Array[*] of "SimaHydTO_typeAxesArray";
+   END_VAR
+
+   VAR 
+      statFirstRunDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statActualAxisIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statArrayMinIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statArrayMaxIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPreviousObjectOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statNextObjectOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statExecuteDirectIndexSelectionOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statActualAxisIndexOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+   END_VAR
+
+   VAR_TEMP 
+      tempVariant : Variant;
+      tempErrorVariant : Int;
+      tempDbAny : DB_ANY;
+      tempHydAxisData : REF_TO "LSimaHydTO_typeAxisData";
+   END_VAR
+
+   VAR CONSTANT 
+      ERROR_AXIS_INDEX : Int := 0;
+      ERROR_SELECTED_HYDAXIS : DB_ANY := 0;
+      ERROR_SELECTED_HYDAXIS_INTEGER : UInt := 0;
+      ERROR_SELECTED_HYDAXIS_NAME : WString := WSTRING#'';
+      ERROR_SELECTED_AXISTO : DB_ANY := 0;
+      ERROR_SELECTED_AXISTO_INTEGER : UInt := 0;
+      ERROR_SELECTED_AXISTO_TYPE : Int := 0;
+      ERROR_SELECTED_VCHAR : DB_ANY := 0;
+      ERROR_SELECTED_VCHAR_INTEGER : UInt := 0;
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_HMI
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Selection of hydraulic axis out of axis array
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 12.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	
+	//Array detection and initialization
+	IF (#statFirstRunDone = False)
+	THEN
+	  //Get MIN and MAX of array indices
+	  #statArrayMinIndex := DINT_TO_INT(LOWER_BOUND(ARR := #axesArray, DIM := 1));
+	  #statArrayMaxIndex := DINT_TO_INT(UPPER_BOUND(ARR := #axesArray, DIM := 1));
+	  //Set default value of actual axis index
+	  #statActualAxisIndex := #statArrayMinIndex;
+	  #statActualAxisIndexOld := #statArrayMinIndex-1;
+	  //Mark first run of function block
+	  #statFirstRunDone := True;
+	  #selector.Status.dataError := False;
+	  #selector.Status.dataValid := False;
+	END_IF;
+	  //Select axis (in axis data array)
+	  //Previous axis
+	IF ((#selector.Command.previousObject = True)
+	    AND (#statPreviousObjectOld = False)
+	    AND (#selector.Command.nextObject = False)
+	    AND (#selector.Command.executeDirectIndexSelection = False))
+	  THEN
+	    //Decrement actual axis index
+	    #statActualAxisIndex := #statActualAxisIndex - INT#1;
+	    //Check index minimum
+	    IF (#statActualAxisIndex < #statArrayMinIndex)
+	    THEN
+	      //Select last axis by index
+	      #statActualAxisIndex := #statArrayMaxIndex;
+	    END_IF;
+	    //Next axis  
+	  ELSIF ((#selector.Command.nextObject = True)
+	    AND (#statNextObjectOld = False)
+	    AND (#selector.Command.previousObject = False)
+	    AND (#selector.Command.executeDirectIndexSelection = False))
+	  THEN
+	    //Increment actual axis index
+	    #statActualAxisIndex := #statActualAxisIndex + INT#1;
+	    //Check index minimum
+	    IF (#statActualAxisIndex > #statArrayMaxIndex)
+	    THEN
+	      //Select first axis by index
+	      #statActualAxisIndex := #statArrayMinIndex;
+	    END_IF;
+	    //Direct selection
+	  ELSIF ((#selector.Command.executeDirectIndexSelection = True)
+	    AND (#statExecuteDirectIndexSelectionOld = False)
+	    AND (#selector.Command.nextObject = False)
+	    AND (#selector.Command.previousObject = False))
+	  THEN
+	    IF ((#selector.Command.directIndexSelection >= #statArrayMinIndex)
+	      AND (#selector.Command.directIndexSelection <= #statArrayMaxIndex))
+	    THEN
+	      //Set axis index directly
+	      #statActualAxisIndex := #selector.Command.directIndexSelection;
+	    END_IF;
+	  END_IF;
+	
+	  #selector.Status.selectionChanged := FALSE;
+	  IF #statActualAxisIndex <> #statActualAxisIndexOld
+	    AND #axesArray[#statActualAxisIndex].initialized
+	  THEN
+	    //Write function block output
+	    #selector.Status.actualAxisIndex := #statActualAxisIndex;
+	    #tempDbAny := #axesArray[#statActualAxisIndex].axisData;
+	    
+	    #selector.Status.selectedAxis := #tempDbAny;
+	    #selector.Status.selectedAxisInteger := DB_ANY_TO_UINT(#tempDbAny);
+	    
+	    //Get axis data
+	    #tempVariant := DB_ANY_TO_VARIANT(in := #tempDbAny, err => #tempErrorVariant);
+	    
+	    IF TypeOf(#tempVariant) = LSimaHydTO_typeAxisData THEN
+	      #tempHydAxisData ?= #tempVariant;
+	      
+	      //Read hydraulic axis name
+	      #selector.Status.selectedAxisName := #tempHydAxisData^.Name;
+	      //Read connected technology object axis
+	      
+	      CASE TypeOfDB(#tempHydAxisData^.TO_Axis) OF
+	          
+	        TO_PositioningAxis:
+	          #selector.Status.selectedTO_Axis := #tempHydAxisData^.TO_Axis;
+	          #selector.Status.selectedAxisTOInteger := DB_ANY_TO_UINT(#selector.Status.selectedTO_Axis);
+	          #selector.Status.selectedTypeOfAxis := 2;
+	          
+	          #selector.Status.dataValid := TRUE;
+	          
+	        TO_SynchronousAxis:
+	          #selector.Status.selectedTO_Axis := #tempHydAxisData^.TO_Axis;
+	          #selector.Status.selectedAxisTOInteger := DB_ANY_TO_UINT(#selector.Status.selectedTO_Axis);
+	          #selector.Status.selectedTypeOfAxis := 3;
+	          #selector.Status.dataValid := TRUE;
+	          
+	        ELSE
+	          #selector.Status.selectedTO_Axis := 0;
+	          #selector.Status.selectedAxisTOInteger := 0;
+	          #selector.Status.selectedTypeOfAxis := 0;
+	          #selector.Status.dataValid := FALSE;
+	          
+	      END_CASE;
+	      //Read active valve characteristics
+	      #selector.Status.selectedVChar := #tempHydAxisData^.ValveCharacteristic.DB_NUMBER;
+	      #selector.Status.selectedVCharInteger := DB_ANY_TO_UINT(#selector.Status.selectedVChar);
+	      
+	      //Write function block output
+	      #selector.Status.dataError := False;
+	  //    #selector.Status.dataValid := TRUE;
+	      #selector.Status.selectionChanged := TRUE;
+	    ELSE
+	      //error handling
+	      #selector.Status.dataError := True;
+	      #selector.Status.dataValid := False;
+	      
+	      #selector.Status.actualAxisIndex := #statActualAxisIndex;
+	      #selector.Status.selectedAxis := #ERROR_SELECTED_HYDAXIS;
+	      #selector.Status.selectedAxisInteger := #ERROR_SELECTED_HYDAXIS_INTEGER;
+	      #selector.Status.selectedAxisName := #ERROR_SELECTED_HYDAXIS_NAME;
+	      #selector.Status.selectedTO_Axis := #ERROR_SELECTED_AXISTO;
+	      #selector.Status.selectedAxisTOInteger := #ERROR_SELECTED_AXISTO_INTEGER;
+	      #selector.Status.selectedTypeOfAxis := #ERROR_SELECTED_AXISTO_TYPE;
+	      #selector.Status.selectedVChar := #ERROR_SELECTED_VCHAR;
+	      #selector.Status.selectedVCharInteger := #ERROR_SELECTED_VCHAR_INTEGER;
+	      
+	    END_IF;
+	    //Save AxisIndex for edge control
+	    #statActualAxisIndexOld := #statActualAxisIndex;
+	    
+	  END_IF;
+	
+	
+	//-----------------------------------------------------------------------------
+	//Function block system functions
+	//-----------------------------------------------------------------------------
+	
+	//Save signals for edge control
+	  #statPreviousObjectOld := #selector.Command.previousObject;
+	  #statNextObjectOld := #selector.Command.nextObject;
+	  #statExecuteDirectIndexSelectionOld := #selector.Command.executeDirectIndexSelection;
+	
+	
+	
+END_FUNCTION_BLOCK
+

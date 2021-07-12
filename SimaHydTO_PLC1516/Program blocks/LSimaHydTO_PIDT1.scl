@@ -1,0 +1,202 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_PIDT1"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      reset : Bool := FALSE;
+      antiWindUp : Bool;
+      preControlCmdValue : LReal;
+      setpointValue : LReal := 0.0;
+      actualValue : LReal := 0.0;
+      preControl : LReal;
+      proportionalGain : LReal := 2.0;
+      integralTime : LReal;
+      derivativeTime : LReal;
+      decayTime : LReal := 0.0;
+      smoothingTimeByChangeDifference : LReal;
+      iOutputInitValue : LReal := 0.0;
+      iPartUppLimit : LReal := 1000000000000.0;
+      iPartLowLimit : LReal := -1000000000000.0;
+      outUppLimit : LReal := 1000000000000.0;
+      outLowLimit : LReal := -1000000000000.0;
+      sampleTime : LReal := 0.001;
+   END_VAR
+
+   VAR_OUTPUT 
+      outputValue { ExternalWritable := 'False'} : LReal;
+      upperLimitReached { ExternalWritable := 'False'} : Bool;
+      lowerLimitReached { ExternalWritable := 'False'} : Bool;
+      active { ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR 
+      statPropGain { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statPreCtrl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statIntegGain { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := 0.0;
+      statPropPartValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statIntegralPartValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statDiffPartValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statDeviation { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statPPartOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statIntDiff { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      instDT1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+      instKpSmooth { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+      instPreCtrlSmooth { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+      statResetOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statUpperLimitReached { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statLowerLimitReached { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statIPartUppLimReached { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statIPartLowLimReached { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statIntegrActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instIPartSmooth { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_T1";
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	IF #reset THEN                      //restart
+	  IF NOT #statResetOld THEN
+	    //Standardvorbelegung für Variablen
+	    #outputValue := 0.0;     //manipulated value
+	    #statPropPartValue := 0.0;     //proportionality component
+	    #statIntegralPartValue := 0.0;     //integral component
+	    #statDiffPartValue := 0.0;
+	    #statPPartOld := 0.0;     //old deviation
+	    #upperLimitReached := FALSE;   //high limit of manipulated value reached
+	    #lowerLimitReached := FALSE;   //low limit of manipulated value reached
+	    #statResetOld := TRUE;
+	    #active := FALSE;
+	  END_IF;
+	ELSE
+	  #instKpSmooth(enable := #smoothingTimeByChangeDifference > 0.0 AND NOT #statResetOld,
+	                inputValue := #proportionalGain,
+	                timeConstant := #smoothingTimeByChangeDifference,
+	                sampleTime := #sampleTime,
+	                outputValue => #statPropGain);
+	  #instPreCtrlSmooth(enable := #smoothingTimeByChangeDifference > 0.0 AND NOT #statResetOld,
+	                     inputValue := #preControl,
+	                     timeConstant := #smoothingTimeByChangeDifference,
+	                     sampleTime := #sampleTime,
+	                     outputValue => #statPreCtrl);
+	  
+	  #statDeviation := #setpointValue - #actualValue;
+	  //P-part
+	  #statPropPartValue := #statDeviation * #statPropGain;
+	  
+	  #outputValue := #statPropPartValue + 0.01 * #preControlCmdValue * #statPreCtrl;
+	  //I-part
+	  IF #statResetOld THEN
+	    // init i-part
+	    #statIntegralPartValue := #iOutputInitValue;
+	    #statResetOld := FALSE;
+	  END_IF;
+	  IF #integralTime > 0.0 THEN
+	    #statIntegGain := #proportionalGain / #integralTime;
+	    
+	    #statIntDiff := #statIntegGain * #sampleTime * #statDeviation;    //Änderungswert l berechnen
+	    // anti windup
+	    IF ((#statUpperLimitReached OR #statIPartUppLimReached OR (#antiWindUp AND (#statIntegralPartValue > 0.0))) AND (#statIntDiff > 0.0)) OR
+	      ((#statLowerLimitReached OR #statIPartLowLimReached OR (#antiWindUp AND (#statIntegralPartValue < 0.0))) AND (#statIntDiff < 0.0))
+	    THEN
+	      #statIntDiff := 0.0;
+	    END_IF;
+	    #statIntegralPartValue := #statIntegralPartValue + #statIntDiff;      //Neuen I-Anteil berechnen
+	    
+	    // I anteil begrenzung
+	    IF #statIntegralPartValue <= #iPartLowLimit THEN
+	      #statIntegralPartValue := #iPartLowLimit;
+	      #statIPartLowLimReached := TRUE;
+	      
+	    ELSE
+	      #statIPartLowLimReached := FALSE;
+	    END_IF;
+	    IF #statIntegralPartValue >= #iPartUppLimit THEN
+	      #statIntegralPartValue := #iPartUppLimit;
+	      #statIPartUppLimReached := TRUE;
+	      
+	    ELSE
+	      #statIPartUppLimReached := FALSE;
+	    END_IF;
+	    #outputValue := #outputValue + #statIntegralPartValue;
+	    #statIntegrActive := TRUE;
+	  ELSIF #smoothingTimeByChangeDifference > 0.0 AND #statIntegralPartValue <> 0.0 THEN
+	    IF #statIntegrActive THEN
+	      #instIPartSmooth(enable := FALSE,
+	                       inputValue := 0.0,
+	                       timeConstant := #smoothingTimeByChangeDifference,
+	                       sampleTime := #sampleTime);
+	      
+	      #instIPartSmooth(enable := TRUE,
+	                       inputValue := #statIntegralPartValue,
+	                       timeConstant := #smoothingTimeByChangeDifference,
+	                       sampleTime := #sampleTime);
+	      #statIntegrActive := FALSE;
+	    END_IF;
+	    #instIPartSmooth(enable := TRUE,
+	                     inputValue := 0.0,
+	                     timeConstant := #smoothingTimeByChangeDifference,
+	                     sampleTime := #sampleTime,
+	                     outputValue => #statIntegralPartValue);
+	    
+	    #outputValue := #outputValue + #statIntegralPartValue;
+	  ELSE
+	    
+	    #statIntegralPartValue := 0.0;
+	  END_IF;
+	  
+	  //DT1-Anteil berechnen
+	  IF #derivativeTime > 0.0 THEN
+	    #instDT1(enable := NOT #reset AND #decayTime > 0.0,
+	             inputValue := (#statPropPartValue - #statPPartOld) * #derivativeTime / #sampleTime,
+	             timeConstant := #decayTime,
+	             sampleTime := #sampleTime,
+	             outputValue => #statDiffPartValue
+	             // ,active => 
+	             // ,error => 
+	    );
+	    #outputValue := #outputValue + #statDiffPartValue;
+	  ELSE
+	    #statDiffPartValue := 0.0;
+	  END_IF;
+	  #statPPartOld := #statPropPartValue;                          //Statische Lokaldaten schreiben
+	  
+	  
+	  //Stellwertbegrenzung
+	  IF #outputValue >= #outUppLimit THEN        //obere Begrenzung angesprochen
+	    #statUpperLimitReached := TRUE;
+	    #outputValue := #outUppLimit;
+	  ELSE
+	    #statUpperLimitReached := FALSE;
+	  END_IF;
+	  IF #outputValue <= #outLowLimit THEN        //untere Begrenzung angesprochen
+	    #statLowerLimitReached := TRUE;
+	    #outputValue := #outLowLimit;
+	  ELSE
+	    #statLowerLimitReached := FALSE;
+	  END_IF;
+	  #active := TRUE;
+	  #upperLimitReached := #statUpperLimitReached;
+	  #lowerLimitReached := #statLowerLimitReached;
+	END_IF;
+	
+	
+	
+END_FUNCTION_BLOCK
+

@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V16" />
+  <DocumentInfo>
+    <Created>2021-07-12T14:47:15.1602729Z</Created>
+    <ExportSetting>WithDefaults</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>TIA Portal Version Control Interface</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <OptionPackage>
+        <DisplayName>TIA Portal Openness</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>STEP 7 Safety</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>WinCC Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Blocks.GlobalDB ID="0">
+    <AttributeList>
+      <AutoNumber>true</AutoNumber>
+      <DBAccessibleFromOPCUA>false</DBAccessibleFromOPCUA>
+      <HeaderAuthor />
+      <HeaderFamily>SimaHydTO</HeaderFamily>
+      <HeaderName />
+      <HeaderVersion>1.0</HeaderVersion>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+  <Section Name="Static">
+    <Member Name="axes" Datatype="Array[0..2] of &quot;SimaHydTO_typeAxesArray&quot;" Remanence="NonRetain" Accessibility="Public"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Hydraulic axes of the project to be controlled via HMI</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="axisData" Datatype="DB_ANY" /><Member Name="basicControl" Datatype="&quot;SimaHydTO_typeHMIConnectionBasicAxisControlCommand&quot;"><Sections><Section Name="None"><Member Name="powerEnable" Datatype="Bool" /><Member Name="powerStartMode" Datatype="DInt" /><Member Name="powerStopMode" Datatype="Int" /><Member Name="resetExecute" Datatype="Bool" /><Member Name="resetFBExecute" Datatype="Bool" /><Member Name="resetRestart" Datatype="Bool" /><Member Name="homeExecute" Datatype="Bool" /><Member Name="homePosition" Datatype="LReal" /><Member Name="homeMode" Datatype="Int" /><Member Name="jogForward" Datatype="Bool" /><Member Name="jogBackward" Datatype="Bool" /><Member Name="jogVelocity" Datatype="LReal" /><Member Name="jogAcceleration" Datatype="LReal" /><Member Name="jogDeceleration" Datatype="LReal" /><Member Name="jogJerk" Datatype="LReal" /><Member Name="jogPositionControlled" Datatype="Bool" /></Section></Sections></Member><Member Name="directOutputControl" Datatype="&quot;SimaHydTO_typeIHMIConnectionBasicAxisControlDirectOutput&quot;"><Sections><Section Name="None"><Member Name="jogForward" Datatype="Bool" /><Member Name="jogBackward" Datatype="Bool" /><Member Name="commandValueForward" Datatype="LReal" /><Member Name="commandValueBackward" Datatype="LReal" /><Member Name="commandValueRamp" Datatype="LReal" /><Member Name="safetyDistance" Datatype="LReal" /></Section></Sections></Member><Member Name="VCharMeasurement" Datatype="&quot;SimaHydTO_typeAxesArrayVCharMeasurement&quot;"><Sections><Section Name="None"><Member Name="requestForward" Datatype="Bool" /><Member Name="requestBackward" Datatype="Bool" /><Member Name="enableRampingForward" Datatype="Bool" /><Member Name="enableRampingBackward" Datatype="Bool" /></Section></Sections></Member><Member Name="advancedControl" Datatype="&quot;SimaHydTO_typeHMIConnectionAdvancedAxisControlCommand&quot;"><Sections><Section Name="None"><Member Name="moveRelativeExecute" Datatype="Bool" /><Member Name="moveRelativeDistance" Datatype="LReal" /><Member Name="moveAbsoluteExecute" Datatype="Bool" /><Member Name="moveAbsolutePosition" Datatype="LReal" /><Member Name="moveAbsoluteDirection" Datatype="Int" /><Member Name="haltExecute" Datatype="Bool" /><Member Name="haltAbortAcceleration" Datatype="Bool" /><Member Name="Velocity" Datatype="LReal" /><Member Name="Acceleration" Datatype="LReal" /><Member Name="Deceleration" Datatype="LReal" /><Member Name="Jerk" Datatype="LReal" /></Section></Sections></Member><Member Name="initialized" Datatype="Bool" /></Section></Sections></Member>
+  </Section>
+</Sections></Interface>
+      <IsOnlyStoredInLoadMemory>false</IsOnlyStoredInLoadMemory>
+      <IsRetainMemResEnabled>false</IsRetainMemResEnabled>
+      <IsWriteProtectedInAS>false</IsWriteProtectedInAS>
+      <MemoryLayout>Optimized</MemoryLayout>
+      <MemoryReserve>100</MemoryReserve>
+      <Name>SimaHydTO_AxesArray</Name>
+      <Number>33101</Number>
+      <ProgrammingLanguage>DB</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>Array of hydraulic axes usabel in HMI</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="4" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>SimaHydTO_AxesArray</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="6" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.GlobalDB>
+</Document>

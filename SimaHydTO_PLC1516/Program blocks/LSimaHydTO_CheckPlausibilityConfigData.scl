@@ -1,0 +1,70 @@
+﻿FUNCTION "LSimaHydTO_CheckPlausibilityConfigData" : Void
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_OUTPUT 
+      forwardFineRangeStepValue : Real;
+      forwardCoarseRangeStepValue : Real;
+      backwardFineRangeStepValue : Real;
+      backwardCoarseRangeStepValue : Real;
+      configForwardOK : Bool;
+      configBackwardOK : Bool;
+   END_VAR
+
+   VAR_IN_OUT 
+      configData : "LSimaHydTO_typeMeasurementConfig";
+   END_VAR
+
+   VAR_TEMP 
+      tempForwardCalcNumOfPoints : Int;
+      tempBackwardCalcNumOfPoints : Int;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	//check Q-Output settings #################################################
+	#configData.offset := LIMIT(MN := -100.0,  // [%]
+	                                       IN := #configData.offset,
+	                                       MX := +100.0  // [%]
+	);
+	
+	//check settings forward ##################################################
+	"LSimaHydTO_CheckPlausibilityConfigQOutput"(occupiedPoints := 0,
+	                                            fineRangeStepValue=>#forwardFineRangeStepValue,
+	                                            coarseRangeStepValue=>#forwardCoarseRangeStepValue,
+	                                            calcNumOfPoints=>#tempForwardCalcNumOfPoints,
+	                                            qOutputConfig := #configData.forward);
+	
+	#configForwardOK := #tempForwardCalcNumOfPoints > 0 AND #configData.forward.enableMeasurement;
+	
+	//check settings backward ##################################################
+	"LSimaHydTO_CheckPlausibilityConfigQOutput"(occupiedPoints := #tempForwardCalcNumOfPoints,
+	                                            fineRangeStepValue=>#backwardFineRangeStepValue,
+	                                            coarseRangeStepValue=>#backwardCoarseRangeStepValue,
+	                                            calcNumOfPoints=>#tempBackwardCalcNumOfPoints,
+	                                            qOutputConfig := #configData.backward);
+	
+	#configBackwardOK := #tempBackwardCalcNumOfPoints > 0 AND #configData.backward.enableMeasurement;
+	
+	
+END_FUNCTION
+

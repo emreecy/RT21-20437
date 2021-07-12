@@ -1,0 +1,81 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_TOF_Cycl"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      IN : Bool;
+      PT : LReal;
+      CYCLE : LReal;
+   END_VAR
+
+   VAR_OUTPUT 
+      Q { ExternalWritable := 'False'} : Bool;
+      ET { ExternalWritable := 'False'} : LReal;
+   END_VAR
+
+   VAR 
+      statFBState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statElapsedTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+   END_VAR
+
+   VAR CONSTANT 
+      STATE_OFF : Int := 0;
+      STATE_ON : Int := 1;
+      STATE_TIME : Int := 2;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: - for internal use
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//================================================================================
+	
+	
+	CASE #statFBState OF
+	  #STATE_OFF:
+	    IF #IN THEN
+	      #Q := TRUE;
+	      #statElapsedTime := 0.0;
+	      #ET := 0.0;
+	      #statFBState := #STATE_ON;
+	    END_IF;
+	  #STATE_ON:
+	    IF NOT #IN THEN
+	      #statElapsedTime := 0.0;
+	      #ET := 0.0;
+	      #statFBState := #STATE_TIME;
+	    END_IF;
+	  #STATE_TIME:
+	    IF #IN THEN
+	      #Q := TRUE;
+	      #statElapsedTime := 0.0;
+	      #ET := 0.0;
+	      #statFBState := #STATE_ON;
+	    ELSE
+	      #statElapsedTime := #statElapsedTime + #CYCLE;
+	      #ET := #statElapsedTime;
+	      IF #statElapsedTime >= #PT THEN
+	        #Q := FALSE;
+	        #ET := #PT;
+	        #statFBState := #STATE_OFF;
+	      END_IF;
+	    END_IF;
+	    
+	END_CASE;
+	
+END_FUNCTION_BLOCK
+

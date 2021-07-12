@@ -1,0 +1,571 @@
+﻿FUNCTION_BLOCK "SimaHydTO_VCharEditor"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_IN_OUT 
+      hmiConnection : "SimaHydTO_typeHMIConnection";
+      vCharArray : Array[*] of "SimaHydTO_typeVCharArray";
+   END_VAR
+
+   VAR 
+      statFirstRunDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statLoadMeasuredValuesOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statLoadVCharOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statCreateNewVCharOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSaveVCharOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statAbortVCharOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statShowPreviousRowOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statShowNextRowOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statAddRowOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statDeleteRowOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSortAndDisplayOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statVChar { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LSimaHydTO_typeVCharData";
+      instVCharSelectorLoad { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_HmiVCharSelector";
+      instVCharSelectorSave { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "SimaHydTO_HmiVCharSelector";
+      statSelectedTableIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statRetVal { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statBusyWrite { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSaveToDBL { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBusyWriteArray { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSaveArrayToDB { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statTableLowerBound { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := 0;
+      statTableUpperBound { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int := 19;
+   END_VAR
+
+   VAR_TEMP 
+      tempVariant : Variant;
+      tempErrorVariant : Int;
+      tempDbAny : DB_ANY;
+      tempIndex : Int;
+      tempVCharIndex : Int;
+      tempAddRowIndex : Int;
+      tempRetValCreateVChar : DInt;
+      tempTableLowerBound : DInt;
+      tempTableUpperBound : DInt;
+   END_VAR
+
+   VAR CONSTANT 
+      MAXIMUM_REAL : Real := 3.4E+38;
+      MINIMUM_REAL : Real := -3.4E+38;
+      DEFAULT_LINES : Int := 0;
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_VCharEditor
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Editor of the valve characteristics (New/Open/Save)
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 17.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	//Array detection and initialization
+	IF (#statFirstRunDone = False)
+	THEN
+	  //Get MIN and MAX of array indices
+	  "SimaHydTO_GetRealArrayBounds"(lowerBound => #tempTableLowerBound,
+	                                 upperBound => #tempTableUpperBound,
+	                                 arrayOfReal := #hmiConnection.VCharEditor.Table.Velocity);
+	  #statTableLowerBound := DINT_TO_INT(#tempTableLowerBound);
+	  #statTableUpperBound := DINT_TO_INT(#tempTableUpperBound);
+	  //Mark first run of function block
+	  #statFirstRunDone := True;
+	END_IF;
+	
+	
+	  #instVCharSelectorLoad(command := #hmiConnection.VCharEditor.Command.VCharLoad,
+	                         status := #hmiConnection.VCharEditor.Status.VCharLoad,
+	                         vCharArray := #vCharArray);
+	  
+	  
+	  #instVCharSelectorSave(command := #hmiConnection.VCharEditor.Command.VCharSave,
+	                         status := #hmiConnection.VCharEditor.Status.VCharSave,
+	                         vCharArray := #vCharArray);
+	  
+	  
+	  //=============================================================================
+	  //Reset editor data
+	  //=============================================================================
+	  
+	  //Check, if editor is active
+	  IF (#hmiConnection.VCharEditor.Status.EditorActive = False)
+	  THEN
+	    
+	    //Reset statVChar
+	(*    FOR #tempIndex := 0 TO "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT" DO
+	      #statVChar.QOutput[#tempIndex] := 0.0;
+	      #statVChar.Velocity[#tempIndex] := 0.0;
+	      #statVChar.VelocityLimitPositive := 0.0;
+	      #statVChar.VelocityLimitNegative := 0.0;
+	      #statVChar.ZeroZonePositive := 0.0;
+	      #statVChar.ZeroZoneNegative := 0.0;
+	      #statVChar.MaxIdx := 0;
+	      #statVChar.Name := WSTRING#'';
+	    END_FOR;
+	*)    //Reset output signal
+	    #hmiConnection.VCharEditor.Status.EditorActive := False;
+	    #statSaveToDBL := FALSE;
+	    #statSaveArrayToDB := FALSE;
+	  END_IF;
+	  
+	  
+	  //=============================================================================
+	  //Open VChar in editor
+	  //=============================================================================
+	  
+	  IF (#hmiConnection.VCharEditor.Command.LoadVChar
+	    AND NOT #statLoadVCharOld
+	  //  And (#hmiConnection.VCharEditor.Status.EditorActive = False)
+	    AND (#hmiConnection.VCharEditor.Status.VCharLoad.dataValid = True))
+	  THEN
+	    //Convert data
+	    #tempVariant := DB_ANY_TO_VARIANT(in := #hmiConnection.VCharEditor.Status.VCharLoad.selectedVChar, err => #tempErrorVariant);
+	    //Load VChar data
+	    IF TypeOf(#tempVariant) = LSimaHydTO_typeVCharData THEN
+	      //Get data from VChar
+	      VariantGet(SRC := #tempVariant,
+	                 DST => #statVChar);
+	      //Set default name of VChar
+	      #hmiConnection.VCharEditor.VCharNameToSave := #statVChar.Name;
+	      //Set output signal
+	      #hmiConnection.VCharEditor.Status.EditorActive := True;
+	      #hmiConnection.VCharEditor.Parameter.SelectedTableIndex := #statTableLowerBound;
+	      //Display VChar
+	      "SimaHydTO_VCharEditorDisplayVChar"(hmiConnection := #hmiConnection,
+	                                          displayVChar := #statVChar);
+	      //Display Table
+	      #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex := #statTableLowerBound;
+	      //Update displaying editor table
+	      "SimaHydTO_VCharEditorUpdateTable"(hmiConnection := #hmiConnection,
+	                                         updateVChar := #statVChar);
+	    END_IF;
+	  END_IF;
+	  
+	  
+	  //=============================================================================
+	  //Create new VChar in editor
+	  //=============================================================================
+	  
+	  IF ((#hmiConnection.VCharEditor.Command.CreateNewVChar = True)
+	    AND (#statCreateNewVCharOld = False))
+	  //  And (#hmiConnection.VCharEditor.Status.EditorActive = False))
+	  THEN
+	    //Reset statVChar
+	    FOR #tempIndex := 0 TO "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT" DO
+	      #statVChar.QOutput[#tempIndex] := 0.0;
+	      #statVChar.Velocity[#tempIndex] := 0.0;
+	      #statVChar.VelocityLimitPositive := 0.0;
+	      #statVChar.VelocityLimitNegative := 0.0;
+	      #statVChar.ZeroZonePositive := 0.0;
+	      #statVChar.ZeroZoneNegative := 0.0;
+	      #statVChar.MaxIdx := 0;
+	      #statVChar.Name := Wstring#'New VChar';
+	    END_FOR;
+	    //Set default name of VChar
+	    #hmiConnection.VCharEditor.VCharNameToSave := #statVChar.Name;
+	    //Set output signal
+	    #hmiConnection.VCharEditor.Status.EditorActive := True;
+	    #hmiConnection.VCharEditor.Parameter.SelectedTableIndex := #statTableLowerBound;
+	    //Display VChar
+	    "SimaHydTO_VCharEditorDisplayVChar"(hmiConnection := #hmiConnection,
+	                                        displayVChar := #statVChar);
+	    //Display Table
+	    #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex := #statTableLowerBound;
+	    //Update displaying editor table
+	    "SimaHydTO_VCharEditorUpdateTable"(hmiConnection := #hmiConnection,
+	                                       updateVChar := #statVChar);
+	  END_IF;
+	  
+	  
+	  //=============================================================================
+	  //Open measured values of VChar in editor
+	  //=============================================================================
+	  
+	  IF ((#hmiConnection.VCharEditor.Command.LoadMeasuredValues = True)
+	    AND (#statLoadMeasuredValuesOld = False))
+	   // And (#hmiConnection.VCharEditor.Status.EditorActive = False))
+	  THEN
+	    //Generate VChar from measured values
+	    #tempRetValCreateVChar := "LSimaHydTO_CreateVChar"(measuredValues := #hmiConnection.GetCharacteristics.MeasuredValues, vchar := #statVChar);
+	    //Generation successful
+	    IF (#tempRetValCreateVChar = 0)
+	    THEN
+	      //Set default name of VChar
+	      #statVChar.Name := Wstring#'MeasuredVChar';
+	      #hmiConnection.VCharEditor.VCharNameToSave := #statVChar.Name;
+	      //Set output signal
+	      #hmiConnection.VCharEditor.Status.EditorActive := True;
+	      #hmiConnection.VCharEditor.Parameter.SelectedTableIndex := #statTableLowerBound;
+	      //Display VChar
+	      "SimaHydTO_VCharEditorDisplayVChar"(hmiConnection := #hmiConnection,
+	                                          displayVChar := #statVChar);
+	      //Display Table
+	      #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex := #statTableLowerBound;
+	      //Update displaying editor table
+	      "SimaHydTO_VCharEditorUpdateTable"(hmiConnection := #hmiConnection,
+	                                         updateVChar := #statVChar);
+	    ELSE
+	      //Reset statVChar
+	      FOR #tempIndex := 0 TO "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT" DO
+	        #statVChar.QOutput[#tempIndex] := 0.0;
+	        #statVChar.Velocity[#tempIndex] := 0.0;
+	        #statVChar.VelocityLimitPositive := 0.0;
+	        #statVChar.VelocityLimitNegative := 0.0;
+	        #statVChar.ZeroZonePositive := 0.0;
+	        #statVChar.ZeroZoneNegative := 0.0;
+	        #statVChar.MaxIdx := 0;
+	        #statVChar.Name := Wstring#'';
+	      END_FOR;
+	      //Reset output signal
+	      #hmiConnection.VCharEditor.Status.EditorActive := False;
+	    END_IF;
+	  END_IF;
+	  
+	  
+	  //=============================================================================
+	  //Save VChar
+	  //=============================================================================
+	  
+	  IF ((#hmiConnection.VCharEditor.Command.SaveVChar = True)
+	    AND (#statSaveVCharOld = False)
+	    AND (#hmiConnection.VCharEditor.Status.EditorActive = True)
+	    AND (#hmiConnection.VCharEditor.Status.VCharSave.dataValid))
+	  THEN
+	    //Convert data
+	    #tempVariant := DB_ANY_TO_VARIANT(in := #hmiConnection.VCharEditor.Status.VCharSave.selectedVChar, err => #tempErrorVariant);
+	    //Write back VChar data
+	    IF TypeOf(#tempVariant) = LSimaHydTO_typeVCharData THEN
+	      //Set name of VChar
+	      #statVChar.Name := #hmiConnection.VCharEditor.VCharNameToSave;
+	      //Write data from VChar
+	      //Start sorting editor table
+	      "SimaHydTO_VCharEditorSortTable"(hmiConnection := #hmiConnection,
+	                                       sortVChar := #statVChar);
+	      //Update displaying editor table
+	      "SimaHydTO_VCharEditorUpdateTable"(hmiConnection := #hmiConnection,
+	                                         updateVChar := #statVChar);
+	      //Display VChar
+	      "SimaHydTO_VCharEditorDisplayVChar"(hmiConnection := #hmiConnection,
+	                                          displayVChar := #statVChar);
+	      
+	      
+	      VariantPut(SRC := #statVChar,
+	                 DST := #tempVariant);
+	      #hmiConnection.VCharEditor.Status.VCharSave.selectedVCharName := #statVChar.Name;
+	      IF #hmiConnection.VCharEditor.Status.VCharLoad.selectedVChar = #hmiConnection.VCharEditor.Status.VCharSave.selectedVChar
+	      THEN
+	        #hmiConnection.VCharEditor.Status.VCharLoad.selectedVCharName := #statVChar.Name;
+	      END_IF;
+	      
+	      
+	      #statSaveToDBL := TRUE;
+	      #statSaveArrayToDB := TRUE;
+	      //Convert data
+	     // #hmiConnection.VCharEditor.Status.VCharSave.selectedVChar := VARIANT_TO_DB_ANY(in := #tempVariant, err => #tempErrorVariant);
+	      //Reset VChar data of HMI
+	      FOR #tempIndex := #statTableLowerBound TO #statTableUpperBound DO
+	        #hmiConnection.VCharEditor.Table.Appearance[#tempIndex] := 0;
+	        #hmiConnection.VCharEditor.Table.Index[#tempIndex] := 0;
+	        #hmiConnection.VCharEditor.Table.Velocity[#tempIndex] := 0.0;
+	        #hmiConnection.VCharEditor.Table.QOutput[#tempIndex] := 0.0;
+	      END_FOR;
+	      //Reset name of VChar
+	      #hmiConnection.VCharEditor.VCharNameToSave := Wstring#'';
+	      //Reset output signal
+	      #hmiConnection.VCharEditor.Status.EditorActive := False;
+	      //Display VChar
+	      "SimaHydTO_VCharEditorDisplayVChar"(hmiConnection := #hmiConnection,
+	                                          displayVChar := #statVChar);
+	      //Display Table
+	      #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex := #statTableLowerBound;
+	    END_IF;
+	  END_IF;
+	  // write DBL
+	  IF #statSaveToDBL THEN
+	    #tempVariant := DB_ANY_TO_VARIANT(in := #hmiConnection.VCharEditor.Status.VCharSave.selectedVChar, err => #tempErrorVariant);
+	    #statRetVal := WRIT_DBL(REQ := TRUE, SRCBLK := #tempVariant, BUSY => #statBusyWrite, DSTBLK => #tempVariant);
+	    IF NOT #statBusyWrite THEN
+	      #statSaveToDBL := FALSE;
+	    END_IF;
+	  END_IF;
+	  
+	  // save array element
+	  IF #statSaveArrayToDB THEN
+	    #statRetVal := WRIT_DBL(REQ := TRUE,
+	                            SRCBLK := #vCharArray[#hmiConnection.VCharEditor.Status.VCharSave.actualVCharIndex].VChar_DB,
+	                            BUSY => #statBusyWriteArray,
+	                            DSTBLK => #vCharArray[#hmiConnection.VCharEditor.Status.VCharSave.actualVCharIndex].VChar_DB);
+	    IF NOT #statBusyWriteArray THEN
+	      #statSaveArrayToDB := FALSE;
+	    END_IF;
+	  END_IF;
+	  
+	  
+	  
+	  //=============================================================================
+	  //Abort editor (Discard VChar data)
+	  //=============================================================================
+	  
+	  IF ((#hmiConnection.VCharEditor.Command.AbortEditor = True)
+	    AND (#statAbortVCharOld = False)
+	    AND (#hmiConnection.VCharEditor.Status.EditorActive = True))
+	  THEN
+	    //Reset VChar data of HMI
+	    FOR #tempIndex := #statTableLowerBound TO #statTableUpperBound DO
+	      #hmiConnection.VCharEditor.Table.Appearance[#tempIndex] := 0;
+	      #hmiConnection.VCharEditor.Table.Index[#tempIndex] := 0;
+	      #hmiConnection.VCharEditor.Table.Velocity[#tempIndex] := 0.0;
+	      #hmiConnection.VCharEditor.Table.QOutput[#tempIndex] := 0.0;
+	    END_FOR;
+	    //Reset name of VChar
+	    #hmiConnection.VCharEditor.VCharNameToSave := Wstring#'';
+	    //Reset start index
+	    #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex := #statTableLowerBound;
+	    //Display VChar
+	    "SimaHydTO_VCharEditorDisplayVChar"(hmiConnection := #hmiConnection,
+	                                        displayVChar := #statVChar);
+	    // //Display Table
+	    // #statUpdateTable := True;
+	    //Reset output signal
+	    #hmiConnection.VCharEditor.Status.EditorActive := False;
+	  END_IF;
+	  
+	  
+	  
+	  
+	  
+	  //=============================================================================
+	  //Editor function: Show previous/next row (table data)
+	  //=============================================================================
+	  
+	  //Load previous table data
+	  IF ((#hmiConnection.VCharEditor.Command.ShowPreviousRow = True)
+	    AND (#statShowPreviousRowOld = False)
+	    AND (#hmiConnection.VCharEditor.Status.EditorActive = True))
+	  THEN
+	    IF ((#hmiConnection.VCharEditor.Parameter.ActualTableStartIndex - #statTableUpperBound - 1) >= 0)
+	    THEN
+	      //Save actual table from HMI to VChar data
+	      FOR #tempIndex := #statTableLowerBound TO #statTableUpperBound DO
+	        #tempVCharIndex := #tempIndex + #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex;
+	        IF ((#tempVCharIndex <= #statVChar.MaxIdx)
+	          AND (#hmiConnection.VCharEditor.Table.Appearance[#tempIndex]  > 0))
+	        THEN
+	          #statVChar.Velocity[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.Velocity[#tempIndex];
+	          #statVChar.QOutput[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.QOutput[#tempIndex];
+	        END_IF;
+	      END_FOR;
+	      //Set new start index
+	      #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex := #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex - #statTableUpperBound - 1;
+	      //Update displaying editor table
+	      "SimaHydTO_VCharEditorUpdateTable"(hmiConnection := #hmiConnection,
+	                                         updateVChar := #statVChar);
+	    END_IF;
+	  END_IF;
+	  
+	  //Load next table data
+	  IF ((#hmiConnection.VCharEditor.Command.ShowNextRow = True)
+	    AND (#statShowNextRowOld = False)
+	    AND (#hmiConnection.VCharEditor.Status.EditorActive = True))
+	  THEN
+	    IF ((#hmiConnection.VCharEditor.Parameter.ActualTableStartIndex + #statTableUpperBound + 1) <= #statVChar.MaxIdx)
+	    THEN
+	      //Save actual table from HMI to VChar data
+	      FOR #tempIndex := #statTableLowerBound TO #statTableUpperBound DO
+	        #tempVCharIndex := #tempIndex + #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex;
+	        IF ((#tempVCharIndex <= #statVChar.MaxIdx)
+	          AND (#hmiConnection.VCharEditor.Table.Appearance[#tempIndex]  > 0))
+	        THEN
+	          #statVChar.Velocity[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.Velocity[#tempIndex];
+	          #statVChar.QOutput[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.QOutput[#tempIndex];
+	        END_IF;
+	      END_FOR;
+	      //Set new start index
+	      #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex := #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex + #statTableUpperBound + 1;
+	      //Update displaying editor table
+	      "SimaHydTO_VCharEditorUpdateTable"(hmiConnection := #hmiConnection,
+	                                         updateVChar := #statVChar);
+	    END_IF;
+	  END_IF;
+	  
+	  
+	  
+	  
+	  //=============================================================================
+	  //Editor function: Add row to table data
+	  //=============================================================================
+	  
+	  IF ((#hmiConnection.VCharEditor.Command.AddRow = True)
+	    AND (#statAddRowOld = False)
+	    AND (#hmiConnection.VCharEditor.Status.EditorActive = True))
+	  THEN
+	    //Check table index
+	    IF (#statVChar.MaxIdx < "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT")
+	    THEN
+	      //Reset error bit
+	      #hmiConnection.VCharEditor.Status.Error := False;
+	      //Save actual table from HMI to VChar data
+	      FOR #tempIndex := #statTableLowerBound TO #statTableUpperBound DO
+	        #tempVCharIndex := #tempIndex + #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex;
+	        IF ((#tempVCharIndex <= #statVChar.MaxIdx)
+	          AND (#hmiConnection.VCharEditor.Table.Appearance[#tempIndex]  > 0))
+	        THEN
+	          #statVChar.Velocity[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.Velocity[#tempIndex];
+	          #statVChar.QOutput[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.QOutput[#tempIndex];
+	        END_IF;
+	      END_FOR;
+	      //Get row index to add row
+	      #tempAddRowIndex := #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex + #hmiConnection.VCharEditor.Parameter.SelectedTableIndex;
+	      FOR #tempIndex := #statVChar.MaxIdx TO #tempAddRowIndex BY (-1)
+	      DO
+	        #statVChar.Velocity[#tempIndex + 1] := #statVChar.Velocity[#tempIndex];
+	        #statVChar.QOutput[#tempIndex + 1] := #statVChar.QOutput[#tempIndex];
+	      END_FOR;
+	      //Reset added row
+	      #statVChar.Velocity[#tempAddRowIndex] := 0.0;
+	      #statVChar.QOutput[#tempAddRowIndex] := 0.0;
+	      //Add row to MaxIdx
+	      #statVChar.MaxIdx := #statVChar.MaxIdx + 1;
+	      //Select new row
+	     // #hmiConnection.VCharEditor.Parameter.SelectedTableIndex := #hmiConnection.VCharEditor.Parameter.SelectedTableIndex;
+	      IF (#hmiConnection.VCharEditor.Parameter.SelectedTableIndex > #statTableUpperBound)
+	      THEN
+	        #hmiConnection.VCharEditor.Parameter.SelectedTableIndex := #statTableUpperBound;
+	      END_IF;
+	    ELSE
+	      //Set error bit
+	      #hmiConnection.VCharEditor.Status.Error := True;
+	    END_IF;
+	    //Update displaying editor table
+	    "SimaHydTO_VCharEditorUpdateTable"(hmiConnection := #hmiConnection,
+	                                       updateVChar := #statVChar);
+	  END_IF;
+	  
+	  
+	  //=============================================================================
+	  //Editor function: Delete row from table data
+	  //=============================================================================
+	  
+	  IF ((#hmiConnection.VCharEditor.Command.DeleteRow = True)
+	    AND (#statDeleteRowOld = False)
+	    AND (#hmiConnection.VCharEditor.Status.EditorActive = True))
+	  THEN
+	    //Check table index
+	    IF (0 < #statVChar.MaxIdx)
+	    THEN
+	      //Reset error bit
+	      #hmiConnection.VCharEditor.Status.Error := False;
+	      //Save actual table from HMI to VChar data
+	      FOR #tempIndex := #statTableLowerBound TO #statTableUpperBound DO
+	        #tempVCharIndex := #tempIndex + #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex;
+	        IF ((#tempVCharIndex <= #statVChar.MaxIdx)
+	          AND (#hmiConnection.VCharEditor.Table.Appearance[#tempIndex]  > 0))
+	        THEN
+	          #statVChar.Velocity[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.Velocity[#tempIndex];
+	          #statVChar.QOutput[#tempVCharIndex] := #hmiConnection.VCharEditor.Table.QOutput[#tempIndex];
+	        END_IF;
+	      END_FOR;
+	      //Get row index to delete row
+	      #tempAddRowIndex := #hmiConnection.VCharEditor.Parameter.ActualTableStartIndex + #hmiConnection.VCharEditor.Parameter.SelectedTableIndex;
+	      FOR #tempIndex := #tempAddRowIndex TO (#statVChar.MaxIdx - 1) BY (+1)
+	      DO
+	        #statVChar.Velocity[#tempIndex] := #statVChar.Velocity[#tempIndex + 1];
+	        #statVChar.QOutput[#tempIndex] := #statVChar.QOutput[#tempIndex + 1];
+	      END_FOR;
+	      //Reset last row
+	      #statVChar.Velocity[#statVChar.MaxIdx] := 0.0;
+	      #statVChar.QOutput[#statVChar.MaxIdx] := 0.0;
+	      //Add row to MaxIdx
+	      #statVChar.MaxIdx := #statVChar.MaxIdx - 1;
+	      //Select new row
+	      #hmiConnection.VCharEditor.Parameter.SelectedTableIndex := #hmiConnection.VCharEditor.Parameter.SelectedTableIndex - 1;
+	      IF (#hmiConnection.VCharEditor.Parameter.SelectedTableIndex < #statTableLowerBound)
+	      THEN
+	        #hmiConnection.VCharEditor.Parameter.SelectedTableIndex := #statTableLowerBound;
+	      END_IF;
+	    ELSE
+	      //Set error bit
+	      #hmiConnection.VCharEditor.Status.Error := True;
+	    END_IF;
+	    //Update displaying editor table
+	    "SimaHydTO_VCharEditorUpdateTable"(hmiConnection := #hmiConnection,
+	                                       updateVChar := #statVChar);
+	  END_IF;
+	  
+	  //=============================================================================
+	  //Editor function: Sort and display table data (Update table and graphics)
+	  //=============================================================================
+	  
+	  IF ((#hmiConnection.VCharEditor.Command.SortAndDisplay = True)
+	    AND (#statSortAndDisplayOld = False))
+	  THEN
+	    //Set output signal
+	    #hmiConnection.VCharEditor.Status.Busy := True;
+	    //Start sorting editor table
+	    "SimaHydTO_VCharEditorSortTable"(hmiConnection := #hmiConnection,
+	                                     sortVChar := #statVChar);
+	    //Update displaying editor table
+	    "SimaHydTO_VCharEditorUpdateTable"(hmiConnection := #hmiConnection,
+	                                       updateVChar := #statVChar);
+	    //Display VChar
+	    "SimaHydTO_VCharEditorDisplayVChar"(hmiConnection := #hmiConnection,
+	                                        displayVChar := #statVChar);
+	    //Reset output signal
+	    #hmiConnection.VCharEditor.Status.Busy := False;
+	  END_IF;
+	 (* 
+	  IF #statSelectedTableIndex <> #hmiConnection.VCharEditor.Parameter.SelectedTableIndex THEN
+	    FOR #tempIndex := #TABLE_MIN_INDEX TO #TABLE_MAX_INDEX DO
+	      IF #hmiConnection.VCharEditor.Table.Appearance[#tempIndex] > 0 THEN
+	        IF #tempIndex = #hmiConnection.VCharEditor.Parameter.SelectedTableIndex THEN
+	          #hmiConnection.VCharEditor.Table.Appearance[#tempIndex] := 2;
+	        ELSE
+	          #hmiConnection.VCharEditor.Table.Appearance[#tempIndex] := 1;
+	        END_IF;
+	      END_IF;
+	    END_FOR;
+	  END_IF;
+	  *)
+	  //=============================================================================
+	  //Global editor functions
+	  //=============================================================================
+	  
+	  //Generate output data
+	  IF (#hmiConnection.VCharEditor.Status.EditorActive = True)
+	  THEN
+	    #hmiConnection.VCharEditor.Parameter.MaximumNumberOfLines := "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT";
+	    #hmiConnection.VCharEditor.Parameter.NumberOfUsedLines := #statVChar.MaxIdx;
+	    #hmiConnection.VCharEditor.Parameter.NumberOfUsableLines := #hmiConnection.VCharEditor.Parameter.MaximumNumberOfLines - #hmiConnection.VCharEditor.Parameter.NumberOfUsedLines;
+	  ELSE
+	    #hmiConnection.VCharEditor.Parameter.MaximumNumberOfLines := #DEFAULT_LINES;
+	    #hmiConnection.VCharEditor.Parameter.NumberOfUsedLines := #DEFAULT_LINES;
+	    #hmiConnection.VCharEditor.Parameter.NumberOfUsableLines := #DEFAULT_LINES;
+	  END_IF;
+	  
+	  
+	  //Save data from last cycle
+	  #statLoadMeasuredValuesOld := #hmiConnection.VCharEditor.Command.LoadMeasuredValues;
+	  #statLoadVCharOld := #hmiConnection.VCharEditor.Command.LoadVChar;
+	  #statCreateNewVCharOld := #hmiConnection.VCharEditor.Command.CreateNewVChar;
+	  #statSaveVCharOld := #hmiConnection.VCharEditor.Command.SaveVChar;
+	  #statAbortVCharOld := #hmiConnection.VCharEditor.Command.AbortEditor;
+	  #statShowPreviousRowOld := #hmiConnection.VCharEditor.Command.ShowPreviousRow;
+	  #statShowNextRowOld := #hmiConnection.VCharEditor.Command.ShowNextRow;
+	  #statAddRowOld := #hmiConnection.VCharEditor.Command.AddRow;
+	  #statDeleteRowOld := #hmiConnection.VCharEditor.Command.DeleteRow;
+	  #statSortAndDisplayOld := #hmiConnection.VCharEditor.Command.SortAndDisplay;
+	  #statSelectedTableIndex := #hmiConnection.VCharEditor.Parameter.SelectedTableIndex;
+	
+	
+	
+END_FUNCTION_BLOCK
+

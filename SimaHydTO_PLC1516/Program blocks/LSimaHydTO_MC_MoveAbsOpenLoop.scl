@@ -1,0 +1,362 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_MC_MoveAbsOpenLoop"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.22
+   VAR_INPUT 
+      axisTO {InstructionName := 'TO_PositioningAxis'; LibVersion := '4.0'} : TO_PositioningAxis;
+      execute : Bool;
+      position : LReal;
+      velocity : LReal := 100.0;
+      acceleration : LReal := 100.0;
+      deceleration : LReal := 100.0;
+      jerk : LReal := 100.0;
+   END_VAR
+
+   VAR_OUTPUT 
+      done { ExternalWritable := 'False'} : Bool;
+      busy { ExternalWritable := 'False'} : Bool;
+      commandAborted { ExternalWritable := 'False'} : Bool;
+      error { ExternalWritable := 'False'} : Bool;
+      errorID { ExternalWritable := 'False'} : Word;
+   END_VAR
+
+   VAR 
+      statFBState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statExecuteOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instMcMoveVelocity {InstructionName := 'MC_MOVEVELOCITY'; LibVersion := '4.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : MC_MOVEVELOCITY;
+      statPosition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statVelocity { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statAcceleration { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statDeceleration { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statDecelNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statJerk { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statDirection { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statPosWindow { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statActualPosition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statActualVelNorm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statStopDistance { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      instTON_Deceleration {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TON_TIME;
+      statTimeDelay { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time;
+      statElapsedDelayTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statDecelOpenLoop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statMaxDeceleration { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statLengthUnit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UDInt;
+      statVelocityUnit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UDInt;
+      statIntVelocityFactor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := 1.0;
+      statIntAccFactor { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := 1.0;
+   END_VAR
+
+   VAR CONSTANT 
+      NO_ERROR : Word := 16#0000_0000;
+      STATE_IDLE : DInt;
+      STATE_FIRST_CYCLE : DInt := 10;
+      STATE_BUSY : DInt := 20;
+      STATE_DECELERATION : DInt := 23;
+      STATE_FINISHING : DInt := 25;
+      STATE_DONE : DInt := 30;
+      STATE_COMMAND_ABORTED : DInt := 40;
+      STATE_ERROR : DInt := 100;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: Function starts the positioning motion of an axis to
+	//               an absolute position with open loop position controller.
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00.00    15.03.2018    APC_ERLF            First released version
+	//01.22    22.04.2020    APC_ERLF              - improved: units are taken into account for the control
+	
+	//================================================================================
+	
+	
+	//----------------------------------------------------------------------
+	//start
+	//----------------------------------------------------------------------
+	
+	// rising edge of execute starts functionality
+	IF #execute AND NOT #statExecuteOld THEN
+	  // initialization
+	  #done := FALSE;
+	  #commandAborted := FALSE;
+	  #busy := FALSE;
+	  #error := FALSE;
+	  #errorID := #NO_ERROR;
+	  IF #axisTO.PositionLimits_SW.Active THEN
+	    IF #position > #axisTO.PositionLimits_SW.MaxPosition THEN
+	      #statPosition := #axisTO.PositionLimits_SW.MaxPosition;
+	    ELSIF #position < #axisTO.PositionLimits_SW.MinPosition THEN
+	      #statPosition := #axisTO.PositionLimits_SW.MinPosition;
+	    ELSE
+	      #statPosition := #position;
+	    END_IF;
+	  ELSE
+	    #statPosition := #position;
+	  END_IF;
+	  
+	  #statLengthUnit := #axisTO.Units.LengthUnit;
+	  #statVelocityUnit := #axisTO.Units.VelocityUnit;
+	  
+	  #statIntVelocityFactor := "LSimaHydTO_GetUnitsCorrection"(lengthUnit := #statLengthUnit,
+	                                                            velocityUnit := #statVelocityUnit,
+	                                                            accelFactor => #statIntAccFactor);
+	  
+	  IF #velocity < 0.0 THEN
+	      #statVelocity := #axisTO.DynamicDefaults.Velocity;
+	  ELSE
+	      #statVelocity := ABS(#velocity);
+	  END_IF;
+	  #statAcceleration := #acceleration;
+	  IF #deceleration < 0.0 THEN
+	    #statDeceleration := #axisTO.DynamicDefaults.Deceleration;
+	  ELSE
+	    #statDeceleration := #deceleration;
+	  END_IF;
+	  #statDecelNorm := #statDeceleration / #statIntAccFactor;
+	  #statJerk := #jerk;
+	  IF #statPosition > #axisTO.ActualPosition THEN
+	    #statDirection := 1; // positive
+	  ELSIF #statPosition < #axisTO.ActualPosition THEN
+	    #statDirection := 2; // negative
+	  END_IF;
+	  
+	  #statPosWindow := #axisTO.PositioningMonitoring.Window;
+	  #statMaxDeceleration := #axisTO.DynamicLimits.MaxDeceleration * 0.999;
+	  #instMcMoveVelocity(Axis := #axisTO,
+	                            Execute := FALSE,
+	                            Velocity := #statVelocity,
+	                            Acceleration := #statAcceleration,
+	                            Deceleration := #statDeceleration,
+	                            Jerk := #statJerk,
+	                            Direction := #statDirection,
+	                            Current := FALSE,
+	                            PositionControlled := FALSE);
+	  
+	  #statFBState := #STATE_BUSY;
+	END_IF;
+	
+	
+	//----------------------------------------------------------------------
+	//busy
+	//----------------------------------------------------------------------
+	// state machine
+	// ------------------------------------------------------------------
+	CASE #statFBState OF
+	    
+	    
+	  #STATE_FIRST_CYCLE:
+	    
+	    ;
+	    
+	    
+	  #STATE_BUSY:
+	    
+	    
+	    #instMcMoveVelocity(Axis := #axisTO,
+	                              Execute := TRUE,
+	                              Velocity := #statVelocity,
+	                              Acceleration := #statAcceleration,
+	                              Deceleration := #statDeceleration,
+	                              Jerk := #statJerk,
+	                              Direction := #statDirection,
+	                              Current := FALSE,
+	                              PositionControlled := FALSE,
+	                              Busy => #busy,
+	                              CommandAborted => #commandAborted,
+	                              Error => #error,
+	                              ErrorId => #errorID);
+	    
+	    IF #error THEN
+	      #statFBState := #STATE_ERROR;
+	    ELSIF #busy THEN
+	      #statActualPosition := #axisTO.ActualPosition;
+	      #statActualVelNorm := ABS(#axisTO.ActualVelocity)/#statIntVelocityFactor;
+	      #statStopDistance := #axisTO.DynamicAxisModel.VelocityTimeConstant * #statActualVelNorm +
+	                          (#statActualVelNorm * ABS(#axisTO.Velocity)/#statIntVelocityFactor) / (2.0 * #statDecelNorm);
+	      IF (#statDirection = 1 AND #statActualPosition >= (#statPosition - #statPosWindow))
+	        OR (#statDirection = 2 AND #statActualPosition <= (#statPosition + #statPosWindow)) THEN
+	        
+	        #instMcMoveVelocity(Axis := #axisTO,
+	                                  Execute := FALSE);
+	        
+	        #statFBState := #STATE_FINISHING;
+	      ELSIF (#statDirection = 1 AND #statActualPosition >= (#statPosition - #statStopDistance))
+	        OR (#statDirection = 2 AND #statActualPosition <= (#statPosition + #statStopDistance))
+	       THEN 
+	        
+	        #instMcMoveVelocity(Axis := #axisTO,
+	                                  Execute := FALSE);
+	        
+	        #statTimeDelay := LREAL_TO_DINT(#axisTO.DynamicAxisModel.VelocityTimeConstant * 1000.0);
+	        #statVelocity := SQRT(2.0 * #axisTO.PositioningMonitoring.Window * #statDecelNorm)*#statIntVelocityFactor;
+	        
+	        #instTON_Deceleration(IN := FALSE,
+	                          PT := #statTimeDelay);
+	        
+	        #statFBState := #STATE_DECELERATION;
+	      END_IF;
+	    ELSIF #commandAborted THEN
+	      #statFBState := #STATE_COMMAND_ABORTED;
+	    END_IF;
+	    
+	    
+	  #STATE_DECELERATION:
+	    
+	    #instMcMoveVelocity(Axis := #axisTO,
+	                              Execute := FALSE,
+	                              Busy => #busy,
+	                              CommandAborted => #commandAborted,
+	                              Error => #error,
+	                              ErrorId => #errorID);
+	    
+	    IF #error THEN
+	      #statFBState := #STATE_ERROR;
+	    ELSIF #busy THEN
+	      #statActualPosition := #axisTO.ActualPosition;
+	      #statActualVelNorm := ABS(#axisTO.ActualVelocity)/#statIntVelocityFactor;
+	      
+	      IF (#statDirection = 1 AND #statActualPosition >= (#statPosition - #statPosWindow))
+	        OR (#statDirection = 2 AND #statActualPosition <= (#statPosition + #statPosWindow)) THEN
+	        
+	        #instMcMoveVelocity(Axis := #axisTO,
+	                                  Execute := FALSE);
+	        
+	        #statFBState := #STATE_FINISHING;
+	      ELSE
+	        
+	        #instTON_Deceleration(IN := TRUE,
+	                          PT := #statTimeDelay);
+	        
+	        #statElapsedDelayTime := LIMIT(MN := 0.0,
+	                                       IN := TIME_TO_DINT(#statTimeDelay - #instTON_Deceleration.ET),
+	                                       MX := TIME_TO_DINT(#statTimeDelay))*0.001;
+	        #statDecelOpenLoop := LIMIT(MN:= 0.1*#statDeceleration,
+	                                    IN := #statIntAccFactor *(#statActualVelNorm * ABS(#axisTO.Velocity)/#statIntVelocityFactor) /
+	                                        (2.0 * (ABS(#statActualPosition - #statPosition) - #statElapsedDelayTime * #statActualVelNorm)),
+	                                    MX := #statMaxDeceleration);
+	        
+	        #instMcMoveVelocity(Axis := #axisTO,
+	                                  Execute := TRUE,
+	                                  Velocity := #statVelocity,
+	                                  Acceleration := #statAcceleration,
+	                                  Deceleration := #statDecelOpenLoop,
+	                                  Jerk := 0.0,
+	                                  Direction := #statDirection,
+	                                  Current := FALSE,
+	                                  PositionControlled := FALSE,
+	                                  Busy => #busy,
+	                                  CommandAborted => #commandAborted,
+	                                  Error => #error,
+	                                  ErrorId => #errorID);
+	        
+	        IF #error THEN
+	          #statFBState := #STATE_ERROR;
+	        END_IF;
+	      END_IF;
+	    ELSIF #commandAborted THEN
+	      #statFBState := #STATE_COMMAND_ABORTED;
+	    END_IF;
+	    
+	    
+	  #STATE_FINISHING:
+	    
+	    #instMcMoveVelocity(Axis := #axisTO,
+	                              Execute := TRUE,
+	                              Velocity := 0.0,
+	                              Acceleration := #statAcceleration,
+	                              Deceleration := #statDeceleration,
+	                              Jerk := 0.0,
+	                              Direction := 0, //statDirection,
+	                              Current := FALSE,
+	                              PositionControlled := FALSE,
+	                              Busy => #busy,
+	                              CommandAborted => #commandAborted,
+	                              Error => #error,
+	                              ErrorId => #errorID);
+	    
+	    IF #error THEN
+	      #statFBState := #STATE_ERROR;
+	    ELSIF #commandAborted THEN
+	      #statFBState := #STATE_COMMAND_ABORTED;
+	    ELSIF NOT #busy OR #instMcMoveVelocity.InVelocity THEN
+	      #busy := FALSE;
+	      #done := TRUE;
+	      #statFBState := #STATE_DONE;
+	    END_IF;
+	    
+	
+	  #STATE_IDLE:
+	    
+	    //==================================================================
+	    //state analysis (no function)
+	    //==================================================================
+	    
+	    ;
+	    
+	    
+	  #STATE_DONE:
+	    
+	    //==================================================================
+	    //output for one cycle minimum
+	    //==================================================================
+	    
+	    IF NOT #execute THEN
+	      #done := FALSE;
+	      #statFBState := #STATE_IDLE;
+	    END_IF;
+	    
+	    
+	  #STATE_COMMAND_ABORTED:
+	    
+	    //==================================================================
+	    //reset commandAborted, output for one cycle minimum
+	    //==================================================================
+	    
+	    IF NOT #execute THEN
+	      #commandAborted := FALSE;
+	      #statFBState := #STATE_IDLE;
+	    END_IF;
+	    
+	    
+	  #STATE_ERROR:
+	    //==================================================================
+	    //reset error, output for one cycle minimum
+	    //==================================================================
+	    
+	    IF NOT #execute THEN
+	      #error := FALSE;
+	      #errorID := #NO_ERROR;
+	      #statFBState := #STATE_IDLE;
+	    END_IF;
+	    
+	    
+	  ELSE
+	    //==================================================================
+	    //when FB is busy...
+	    //==================================================================
+	    
+	    ;
+	    
+	END_CASE;
+	
+	//-------------------------------------------------------------------------
+	//always executed
+	//-------------------------------------------------------------------------
+	
+	// edge detection
+	#statExecuteOld := #execute;
+	// ------------------------------------------------------------------------------
+END_FUNCTION_BLOCK
+

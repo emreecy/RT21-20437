@@ -1,0 +1,196 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_SimpleEncTel81"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      init { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      position { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      axis { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DB_ANY;
+   END_VAR
+
+   VAR_OUTPUT 
+      status { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+   END_VAR
+
+   VAR_IN_OUT 
+      tel81in {InstructionName := 'PD_TEL81_IN'; LibVersion := '4.0'} : PD_TEL81_IN;
+      tel81out {InstructionName := 'PD_TEL81_OUT'; LibVersion := '4.0'} : PD_TEL81_OUT;
+   END_VAR
+
+   VAR 
+      statInitDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statInitOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statInverseDirection { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statSensorSystem { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statMotionType { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      statLeadScrew { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal := 1.0;
+      statModulo {InstructionName := 'TO_Struct_Modulo'; LibVersion := '4.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TO_Struct_Modulo := ((), (), 360.0);
+      statSensorParameter {InstructionName := 'TO_Struct_SensorParameter'; LibVersion := '4.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TO_Struct_SensorParameter;
+      statError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := FALSE;
+      statOldPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statResolutionAbs { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statResolutionCycl { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statDIncPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statIncPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+   END_VAR
+
+   VAR_TEMP 
+      tempReqCmd : Bool;
+      tempDPos : LReal;
+      tempIncResolution : UDInt;
+      tempDIncPosInt : DInt;
+   END_VAR
+
+   VAR CONSTANT 
+      DWORD_1 : DWord := 16#0000_0001;
+      ERR_INVALID_TYPE_OF_AXIS : Word := 16#8201;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	// Tested with:     S7-1500 FW V2.0 or higher
+	// Engineering:     TIA Portal V14
+	// Restrictions:    -
+	// Functionality:   set value of the encoder telegramm 81 
+	//-----------------------------------------------------------------------------
+	// Change log table:
+	// Version    Date          Changes applied
+	// 01.00.00   12.01.2018    First released version
+	//=============================================================================
+	
+	IF NOT #statInitDone OR (#init AND NOT #statInitOld) THEN
+	    #statError := FALSE;
+	    #status := 0;
+	    CASE TypeOfDB(#axis) OF
+	            
+	        TO_ExternalEncoder:
+	            "LSimaHydTO_GetExternalEncoderData"(axis := #axis,
+	                                                inverseDirection => #statInverseDirection,
+	                                                sensorSystem => #statSensorSystem,
+	                                                motionType => #statMotionType,
+	                                                leadScrew => #statLeadScrew,
+	                                                modulo => #statModulo,
+	                                                sensorParameter => #statSensorParameter);
+	            
+	            
+	        TO_PositioningAxis:
+	            #status := "LSimaHydTO_GetPosAxisEncoderData"(axis := #axis,
+	                                                          inverseDirection => #statInverseDirection,
+	                                                          sensorSystem => #statSensorSystem,
+	                                                          motionType => #statMotionType,
+	                                                          leadScrew => #statLeadScrew,
+	                                                          modulo => #statModulo,
+	                                                          sensorParameter => #statSensorParameter);
+	            
+	        TO_SynchronousAxis:
+	            #status := "LSimaHydTO_GetSyncAxisEncoderData"(axis := #axis,
+	                                                           inverseDirection => #statInverseDirection,
+	                                                           sensorSystem => #statSensorSystem,
+	                                                           motionType => #statMotionType,
+	                                                           leadScrew => #statLeadScrew,
+	                                                           modulo => #statModulo,
+	                                                           sensorParameter => #statSensorParameter);
+	            
+	        ELSE
+	            #status := #ERR_INVALID_TYPE_OF_AXIS; // erorr
+	    END_CASE;
+	    
+	    IF #status = 0 THEN
+	        
+	        IF #statSensorSystem = 0 THEN
+	            //linear encoder
+	            #tempIncResolution := DWORD_TO_UDINT(SHL(IN := #DWORD_1, N := #statSensorParameter.FineResolutionXist1));
+	            #statResolutionCycl := #tempIncResolution / #statSensorParameter.Resolution;
+	            #tempIncResolution := DWORD_TO_UDINT(SHL(IN := #DWORD_1, N := #statSensorParameter.FineResolutionXist2));
+	            #statResolutionAbs := #tempIncResolution / #statSensorParameter.Resolution;
+	            
+	        ELSIF #statSensorSystem = 1 THEN
+	            //rotatory encoder
+	            #tempIncResolution := #statSensorParameter.StepsPerRevolution * DWORD_TO_UDINT(SHL(IN := #DWORD_1, N := #statSensorParameter.FineResolutionXist1));
+	            IF #statMotionType = 0 THEN
+	                //linear axis
+	                #statResolutionCycl := #tempIncResolution / #statLeadScrew;
+	            ELSE
+	                // rotatory axis
+	                #statResolutionCycl := #tempIncResolution / 360.0;
+	            END_IF;
+	            #tempIncResolution := #statSensorParameter.StepsPerRevolution * DWORD_TO_UDINT(SHL(IN := #DWORD_1, N := #statSensorParameter.FineResolutionXist2));
+	            IF #statMotionType = 0 THEN
+	                //linear axis
+	                #statResolutionAbs := #tempIncResolution / #statLeadScrew;
+	            ELSE
+	                // rotatory axis
+	                #statResolutionAbs := #tempIncResolution / 360.0;
+	            END_IF;
+	            
+	        END_IF;
+	        IF #statInverseDirection THEN
+	            #statResolutionCycl := - #statResolutionCycl;
+	            #statResolutionAbs := - #statResolutionAbs;
+	        END_IF;
+	        
+	        #statOldPos := #position;
+	        #statIncPos := 0;
+	        #statDIncPos := 0.0;
+	        #statInitDone := TRUE;
+	    END_IF;
+	END_IF;
+	#statInitOld := #init;
+	//  Calculate the position difference
+	IF #statModulo.Enable THEN
+	    #tempDPos := "LSimaHydTO_GetModuloDifference"(actualValue := #position,
+	                                                  oldValue := #statOldPos,
+	                                                  startValue := #statModulo.StartValue,
+	                                                  length := #statModulo.Length);
+	ELSE
+	    #tempDPos := #position - #statOldPos;
+	END_IF;
+	
+	#statDIncPos := #statDIncPos + #tempDPos * #statResolutionCycl;
+	#tempDIncPosInt := TRUNC_DINT(#statDIncPos);
+	#statDIncPos := #statDIncPos - #tempDIncPosInt;
+	// only consider the changes
+	#statIncPos := #statIncPos + #tempDIncPosInt;
+	#tel81in.G1_XIST1 := DINT_TO_DWORD(#statIncPos);
+	#statOldPos := #position;
+	
+	
+	// Error acknowledgement
+	IF #statError THEN
+	    IF #tel81out.G1_STW.AcknowledgeError THEN        // Acknowledge
+	        #tel81in.G1_XIST2 := 0;
+	        #tel81in.G1_ZSW.SensorError := FALSE;
+	        #statError := FALSE;
+	    END_IF;
+	END_IF;
+	
+	// interprete the encoder control word  G1_STW
+	#tempReqCmd := #tel81out.G1_STW.Command0Request OR #tel81out.G1_STW.Command1Request
+	OR #tel81out.G1_STW.Command2Request OR #tel81out.G1_STW.RequestParkingEncoder;
+	
+	
+	IF #tempReqCmd THEN                    // any unsupported comands requested? ==> Error
+	    #tel81in.G1_ZSW.SensorError := TRUE;
+	    #tel81in.G1_XIST2 := 16#0F01;
+	    #statError := TRUE;
+	ELSE
+	    
+	    IF #tel81out.G1_STW.AbsoluteValueCyclically THEN        // request absolute value
+	        #tel81in.G1_XIST2 := DINT_TO_DWORD(TRUNC_DINT(#position * #statResolutionAbs));
+	        #tel81in.G1_ZSW.AbsoluteValueCyclicallyExecuted := TRUE;
+	    ELSE
+	        #tel81in.G1_ZSW.AbsoluteValueCyclicallyExecuted := FALSE;
+	        #tel81in.G1_XIST2 := 0;
+	    END_IF;
+	    
+	END_IF;
+	
+	
+	
+END_FUNCTION_BLOCK
+

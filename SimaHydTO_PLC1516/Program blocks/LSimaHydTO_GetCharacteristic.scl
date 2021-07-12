@@ -1,0 +1,875 @@
+﻿FUNCTION_BLOCK "LSimaHydTO_GetCharacteristic"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LSimaHydTO
+VERSION : 1.22
+   VAR_INPUT 
+      execute : Bool;
+      abort : Bool;
+      continueMeasurement : Bool;
+      enableRampingForward : Bool;
+      enableRampingBackward : Bool;
+   END_VAR
+
+   VAR_OUTPUT 
+      qOutputValueStepForward { ExternalWritable := 'False'} : LReal;
+      qOutputValueStepBackward { ExternalWritable := 'False'} : LReal;
+      velocityStepForward { ExternalWritable := 'False'} : LReal;
+      velocityStepBackward { ExternalWritable := 'False'} : LReal;
+      requestForward { ExternalWritable := 'False'} : Bool;
+      requestBackward { ExternalWritable := 'False'} : Bool;
+      statusMeasurement { ExternalWritable := 'False'} : Word;
+      done { ExternalWritable := 'False'} : Bool;
+      busy { ExternalWritable := 'False'} : Bool;
+      commandAborted { ExternalWritable := 'False'} : Bool;
+      error { ExternalWritable := 'False'} : Bool;
+      status { ExternalWritable := 'False'} : Word;
+   END_VAR
+
+   VAR_IN_OUT 
+      measuredValues : "LSimaHydTO_typeMeasuredValues";
+      configData : "LSimaHydTO_typeMeasurementConfig";
+      axis : "LSimaHydTO_typeAxisData";
+   END_VAR
+
+   VAR 
+      statExecuteOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBusy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word := #STATUS_NO_CALL;
+      statFBState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt := #FB_STATE_NO_PROCESSING;
+      statFBStateOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt := #FB_STATE_NO_PROCESSING;
+      statNumOfLoop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statEnableRamping { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statCommandAborted { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statActualPosition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statQOutputForward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statQOutputBackward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statDirection { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Byte := #UNDEFINED;
+      statMaxPosition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statMinPosition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statPositionMeasurementStart { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statPositionMeasurementEnd { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statActualStepForward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statActualStepBackward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statStepCounterMeasurementForwardAborted { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statStepCounterMeasurementBackwardAborted { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statRangeForward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statRangeBackward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statIdx { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statActualTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Date_And_Time;
+      statTimeMeasurementStart { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Date_And_Time;
+      statTimeMeasurementEnd { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Date_And_Time;
+      statRetInt { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statStatusMeasurement { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      statAbortOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statEnableRampingOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statMeasurementForwardDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statMeasurementBackwardDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statConfigForwardOK { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statConfigBackwardOK { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      instTONWaitForMeasurement {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : TON_TIME;
+      statCoarseBeginBackward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statCoarseBeginForward { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statForwardFineRangeStepValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statForwardCoarseRangeStepValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statBackwardFineRangeStepValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statBackwardCoarseRangeStepValue { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;
+      statEnableRampingMeasurement { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      tempExecute : Bool;
+      tempNumberOfPoints : Int;
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : DInt := 0;
+      FB_STATE_ENABLE_MOVE_TO_END_POS : DInt := 3;
+      FB_STATE_MOVE_TO_END_POSITION : DInt := 4;
+      FB_STATE_ENABLE_RAMP_UP : DInt := 6;
+      FB_STATE_RAMP_UP : DInt := 9;
+      FB_STATE_WAIT_FOR_MEASUREMENT : DInt := 10;
+      FB_STATE_MEASUREMENT : DInt := 11;
+      FB_STATE_RAMP_DOWN : DInt := 12;
+      FB_STATE_ERROR : DInt := 16;
+      FB_STATE_COMMAND_ABORTED : DInt := 17;
+      UNDEFINED : Byte;
+      FORWARD : Byte := 16#1;
+      BACKWARD : Byte := 16#2;
+      FINE_RANGE : Int := 0;
+      COARSE_RANGE : Int := 1;
+      STATUS_MEASUREMENT_OK : Word := 16#0000;
+      STATUS_MEASUREMENT_MOVE_TO_END_POS : Word := 16#0001;
+      STATUS_MEASUREMENT_WAITING : Word := 16#0002;
+      STATUS_MEASUREMENT_BUSY : Word := 16#0004;
+      STATUS_MEASUREMENT_IS_ABORTED : Word := 16#0008;
+      STATUS_MEASUREMENT_DISTANCE_TO_SMALL : Word := 16#0010;
+      STATUS_MEASUREMENT_ARRAY_FORWARD_LIMITED : Word := 16#0020;
+      STATUS_MEASUREMENT_ARRAY_BACKWARD_LIMITED : Word := 16#0040;
+      STATUS_MEASUREMENT_ERROR : Word := 16#8000;
+      STATUS_EXECUTION_FINISHED : Word := 16#0000;
+      STATUS_NO_CALL : Word := 16#7000;
+      STATUS_FIRST_CALL : Word := 16#7001;
+      STATUS_SUBSEQUENT_CALL : Word := 16#7002;
+      STATUS_WAITING_FOR_ENABLING_FORWARD : Word := 16#7003;
+      STATUS_WAITING_FOR_ENABLING_BACKWARD : Word := 16#7004;
+      ALARM_MEASUREMENT_IS_RUNNING : Word := 16#8201;
+      ALARM_ABORT_IS_ON : Word := 16#8202;
+      ALARM_UNDEFINED_STATE : Word := 16#8600;
+      ALARM_VALUE_RAMP_FORWARTS : Word := 16#8005;
+      ALARM_VALUE_RAMP_BACKWARDS : Word := 16#8006;
+      ALARM_DIRECTION : Word := 16#8007;
+      ALARM_VALUE_TRAVERSING_DISTANCE : Word := 16#8010;
+      ALARM_VALUE_MAX_VELOCITY : Word := 16#8011;
+      ALARM_CONFIGURATION : Word := 16#8012;
+      ALARM_AXIS_ERROR_OCCURED : Word := 16#8001;
+      ALARM_AXIS_DISABLED : Word := 16#800F;
+   END_VAR
+
+
+BEGIN
+	//================================================================================
+	//SIEMENS AG // (c)Copyright 2019 All Rights Reserved
+	//--------------------------------------------------------------------------------
+	//Library:       LSimaHydTO
+	//Tested with:   S7-15xx
+	//Engineering:   TIA Portal  V15
+	//Restrictions:  -
+	//Requirements:  S7-1500 (FW 2.5)
+	//Functionality: Execute valve characteristic measurement
+	//
+	//--------------------------------------------------------------------------------
+	//Change log table:
+	//
+	//Version     Date          Expert in charge    Changes applied
+	//01.00    15.03.2018    APC_ERLF            First released version
+	//01.22    22.04.2020    APC_ERLF              - improved: units are taken into account for the control
+	//================================================================================
+	#tempExecute := #execute; // Work with temporary value / create process image
+	
+	REGION TRIGGERING
+	  IF #tempExecute AND NOT #statExecuteOld  // Check if FB is triggered
+	  THEN // First call; initialize FB
+	    IF #statStatus <> #STATUS_NO_CALL THEN
+	      #statFBState := #FB_STATE_ERROR;
+	      #statStatus := #ALARM_MEASUREMENT_IS_RUNNING;
+	    ELSIF #abort THEN
+	      #statFBState := #FB_STATE_ERROR;
+	      #statStatus := #ALARM_ABORT_IS_ON;
+	    ELSE
+	      
+	      #statDone := FALSE;
+	      #statBusy := TRUE;
+	      #statError := FALSE;
+	      #statCommandAborted := FALSE;
+	      #statStatus := #STATUS_FIRST_CALL;
+	      
+	      // reset outputs 
+	      #qOutputValueStepBackward := 0.0;
+	      #qOutputValueStepForward := 0.0;
+	      #velocityStepBackward := 0.0;
+	      #velocityStepForward := 0.0;
+	      #statDirection := #UNDEFINED;
+	      #statStatusMeasurement := #STATUS_MEASUREMENT_OK;
+	      #statIdx := "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT" + 1;
+	      
+	      "LSimaHydTO_CheckPlausibilityConfigData"(forwardFineRangeStepValue => #statForwardFineRangeStepValue,
+	                                               forwardCoarseRangeStepValue => #statForwardCoarseRangeStepValue,
+	                                               backwardFineRangeStepValue => #statBackwardFineRangeStepValue,
+	                                               backwardCoarseRangeStepValue => #statBackwardCoarseRangeStepValue,
+	                                               configForwardOK => #statConfigForwardOK,
+	                                               configBackwardOK => #statConfigBackwardOK,
+	                                               configData := #configData);
+	      
+	      
+	      REGION check input parameters
+	        IF #axis.Internal.PositionLimits_SW.Active THEN
+	          #statMaxPosition := #axis.Internal.PositionLimits_SW.MaxPosition - ABS(#configData.safetyDistance);
+	          #statMinPosition := #axis.Internal.PositionLimits_SW.MinPosition + ABS(#configData.safetyDistance);
+	          //check if actual position is in the limits
+	        ELSE
+	          #statMaxPosition := 1.0e12;
+	          #statMinPosition := -1.0e12;
+	          //check if actual position is in the limits
+	        END_IF;
+	        
+	        IF #configData.forward.ramp = 0.0
+	          AND #configData.forward.enableMeasurement
+	        THEN
+	          #statFBState := #FB_STATE_ERROR;
+	          #statStatus := #ALARM_VALUE_RAMP_FORWARTS;
+	        ELSIF #configData.backward.ramp = 0.0
+	          AND #configData.backward.enableMeasurement
+	        THEN
+	          #statFBState := #FB_STATE_ERROR;
+	          #statStatus := #ALARM_VALUE_RAMP_BACKWARDS;
+	        ELSIF #statMaxPosition <= #statMinPosition
+	          OR #configData.safetyDistance < 0.0
+	        THEN
+	          #statFBState := #FB_STATE_ERROR;
+	          #statStatus := #ALARM_VALUE_TRAVERSING_DISTANCE;
+	        ELSIF NOT (#configData.forward.enableMeasurement OR #configData.backward.enableMeasurement)
+	        THEN
+	          //error: no direction is enabled
+	          #statFBState := #FB_STATE_ERROR;
+	          #statStatus := #ALARM_DIRECTION;
+	        ELSIF (#configData.forward.maxVelocity = 0.0 AND #configData.forward.enableMeasurement)
+	          OR (#configData.backward.maxVelocity = 0.0 AND #configData.backward.enableMeasurement)
+	        THEN
+	          //error: illegal value Vmax
+	          #statFBState := #FB_STATE_ERROR;
+	          #statStatus := #ALARM_VALUE_MAX_VELOCITY;
+	        ELSE
+	          //check config forward
+	          IF #statConfigForwardOK THEN
+	            IF #configData.forward.fineRange.numberOfPoints > 0 THEN
+	              #statRangeForward := #FINE_RANGE;
+	              #statCoarseBeginForward := -1;
+	            ELSE
+	              #statRangeForward := #COARSE_RANGE;
+	              #statCoarseBeginForward := 0;
+	            END_IF;
+	          END_IF;
+	          //check config backward
+	          IF #statConfigBackwardOK THEN
+	            IF #configData.backward.fineRange.numberOfPoints > 0 THEN
+	              #statRangeBackward := #FINE_RANGE;
+	              #statCoarseBeginBackward := -1;
+	            ELSE
+	              #statRangeBackward := #COARSE_RANGE;
+	              #statCoarseBeginBackward := 0;
+	            END_IF;
+	          END_IF;
+	          IF NOT (#statConfigForwardOK OR #statConfigBackwardOK) THEN
+	            //error: illegal config configuration
+	            #statFBState := #FB_STATE_ERROR;
+	            #statStatus := #ALARM_CONFIGURATION;
+	          ELSE
+	            #statError := FALSE;
+	            #statStatus := #STATUS_FIRST_CALL;
+	            #statStatusMeasurement := #STATUS_MEASUREMENT_OK;
+	          END_IF;
+	        END_IF;
+	        
+	        //check input parameters
+	        IF #statFBState <> #FB_STATE_ERROR
+	        THEN
+	          //init internal variables
+	          #statMeasurementForwardDone := NOT #configData.forward.enableMeasurement;
+	          #statMeasurementBackwardDone := NOT #configData.backward.enableMeasurement;
+	          #statActualStepForward := 0;
+	          #statActualStepBackward := 0;
+	          #statIdx := 0;
+	          #measuredValues.forward.maxQOutput := 0.0;
+	          #measuredValues.forward.maxVelocity := 0.0;
+	          #measuredValues.forward.maxIndexMeasurement := -1;
+	          #measuredValues.backward.maxQOutput := 0.0;
+	          #measuredValues.backward.maxVelocity := 0.0;
+	          #measuredValues.backward.maxIndexMeasurement := -1;
+	          #statStepCounterMeasurementForwardAborted := 0;
+	          #statStepCounterMeasurementBackwardAborted := 0;
+	          
+	        ELSE
+	          //set PLCopen outputs
+	          #statBusy := FALSE;
+	        END_IF;
+	        
+	      END_REGION
+	      
+	    END_IF;
+	  ELSIF (#statStatus = #STATUS_FIRST_CALL) THEN
+	    #statStatus := #STATUS_SUBSEQUENT_CALL;
+	  END_IF;
+	  
+	  // Edge detection 'execute' input
+	  #statExecuteOld := #tempExecute;
+	END_REGION TRIGGERING
+	
+	IF (#statStatus = #STATUS_NO_CALL) THEN // Nothing to do -> End here to reduce "system load"
+	  RETURN;
+	END_IF;
+	
+	REGION WATCHING 
+	  //get actual position
+	  #statActualPosition := #axis.ActualPosition;
+	  //get actual Time
+	  #statRetInt := RD_SYS_T(#statActualTime);
+	  //init internal variables
+	  
+	  
+	  REGION INIT_MEASUREMENT
+	    IF #statStatus = #STATUS_FIRST_CALL AND NOT #statError THEN
+	      #statStatusMeasurement := #statStatusMeasurement AND NOT #STATUS_MEASUREMENT_MOVE_TO_END_POS;
+	      
+	      IF #configData.forward.enableMeasurement AND #configData.backward.enableMeasurement THEN
+	        //check start direction
+	        IF (#statMaxPosition - #statActualPosition) > (#statActualPosition - #statMinPosition) THEN
+	          #statDirection := #FORWARD;
+	        ELSE
+	          #statDirection := #BACKWARD;
+	        END_IF;
+	        #statFBState := #FB_STATE_ENABLE_RAMP_UP;
+	      ELSE
+	        IF #configData.forward.enableMeasurement THEN
+	          IF #statActualPosition < #statMaxPosition - #configData.safetyDistance THEN
+	            #statDirection := #FORWARD;
+	            #statFBState := #FB_STATE_ENABLE_RAMP_UP;
+	          ELSE
+	            #statDirection := #BACKWARD;
+	            #statFBState := #FB_STATE_ENABLE_MOVE_TO_END_POS;
+	          END_IF;
+	        ELSE
+	          IF #statActualPosition > #statMinPosition + #configData.safetyDistance THEN
+	            #statDirection := #BACKWARD;
+	            #statFBState := #FB_STATE_ENABLE_RAMP_UP;
+	          ELSE
+	            #statDirection := #FORWARD;
+	            #statFBState := #FB_STATE_ENABLE_MOVE_TO_END_POS;
+	          END_IF;
+	        END_IF;
+	      END_IF;
+	      //start always from min. value
+	      #statQOutputForward := MAX(IN1 := #configData.forward.minQOutputValue, IN2 := #configData.offset);
+	      #measuredValues.forward.minQOutput := (#configData.forward.minQOutputValue);
+	      #statQOutputBackward := MAX(IN1 := ABS(#configData.backward.minQOutputValue), IN2 := ABS(#configData.offset));
+	      #measuredValues.backward.minQOutput := (- #configData.backward.minQOutputValue);
+	      #statEnableRamping := (#enableRampingForward AND #statDirection = #FORWARD) OR (#enableRampingBackward AND #statDirection = #BACKWARD);
+	      
+	    END_IF;
+	  END_REGION INIT_MEASUREMENT
+	  
+	  
+	  #statEnableRamping := (#enableRampingForward AND #statDirection = #FORWARD) OR (#enableRampingBackward AND #statDirection = #BACKWARD);
+	  IF ((#axis.ErrorWord <> 0 OR NOT #axis.StatusActor.Enabled)
+	    AND #statFBState <> #FB_STATE_NO_PROCESSING) OR  #statFBState = #FB_STATE_ERROR
+	  THEN
+	    IF #axis.ErrorWord <> 0 THEN
+	      #statStatus := #ALARM_AXIS_ERROR_OCCURED;
+	    ELSIF NOT #axis.StatusActor.Enabled THEN
+	      #statStatus := #ALARM_AXIS_DISABLED;
+	    END_IF;
+	    
+	    #axis.Internal.Control.DirectOutput.activate := FALSE;
+	    #axis.Internal.Control.DirectOutput.jogForward := FALSE;
+	    #axis.Internal.Control.DirectOutput.jogBackward := FALSE;
+	    #statFBState := #FB_STATE_ERROR;
+	    // stop/pause measurement
+	  ELSIF (#abort AND NOT #statAbortOld)
+	    OR
+	    (NOT #statEnableRamping AND #statEnableRampingOld)
+	  THEN
+	    IF #statFBState = #FB_STATE_MOVE_TO_END_POSITION
+	      OR #statFBState = #FB_STATE_RAMP_UP
+	      OR #statFBState = #FB_STATE_WAIT_FOR_MEASUREMENT
+	      OR #statFBState = #FB_STATE_MEASUREMENT THEN
+	      #statCommandAborted := #abort;
+	      #axis.Internal.Control.DirectOutput.jogForward := FALSE;
+	      #axis.Internal.Control.DirectOutput.jogBackward := FALSE;
+	      #statFBState := #FB_STATE_RAMP_DOWN;
+	    ELSIF #abort AND #statFBState <> #FB_STATE_NO_PROCESSING
+	      AND #statFBState <> #FB_STATE_ERROR
+	      AND #statFBState <> #FB_STATE_COMMAND_ABORTED
+	    THEN
+	      #statCommandAborted := #abort;
+	      #statStatusMeasurement := #STATUS_MEASUREMENT_IS_ABORTED;
+	      #statFBState := #FB_STATE_COMMAND_ABORTED;
+	    END_IF;
+	  END_IF;
+	  
+	  
+	  // do not use statI in a following operation
+	  IF #statIdx <= "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT" THEN
+	    #measuredValues.forward.qOutput[#statIdx] := 0.0;  // Q-Output value
+	    #measuredValues.forward.velocity[#statIdx] := 0.0;  // velocity
+	    #measuredValues.backward.qOutput[#statIdx] := 0.0;  // Q-Output value
+	    #measuredValues.backward.velocity[#statIdx] := 0.0;  // velocity
+	    #statIdx := #statIdx + 1;
+	  END_IF;
+	END_REGION
+	
+	REGION STATE_MACHINE
+	  #statNumOfLoop := 0; // counter to avoid endless loop
+	  REPEAT
+	    #statFBStateOld := #statFBState;
+	    #statEnableRamping := (#enableRampingForward AND #statDirection = #FORWARD) OR (#enableRampingBackward AND #statDirection = #BACKWARD);
+	    
+	    CASE #statFBState OF
+	        
+	        //do nothing
+	      #FB_STATE_NO_PROCESSING:
+	        
+	        REGION NO_PROCESSING
+	          IF NOT #statError THEN
+	            #statStatus := #STATUS_NO_CALL;
+	          END_IF;
+	        END_REGION
+	        
+	        
+	        //move to end position
+	      #FB_STATE_ENABLE_MOVE_TO_END_POS:
+	        
+	        REGION WAIT_FOR_ENABLE_MOVE_TO_END_POS
+	          
+	          IF #statEnableRamping  THEN
+	            IF #statDirection = #FORWARD THEN
+	              #axis.Internal.Control.DirectOutput.commandValueRamp := #configData.forward.ramp;
+	              #axis.Internal.Control.DirectOutput.commandValueForward := ABS(#configData.forward.setpointForMovement);
+	              #axis.Internal.Control.DirectOutput.jogForward := TRUE;
+	            ELSIF #statDirection = #BACKWARD THEN
+	              #axis.Internal.Control.DirectOutput.commandValueRamp := #configData.backward.ramp;
+	              #axis.Internal.Control.DirectOutput.commandValueBackward := ABS(#configData.backward.setpointForMovement);
+	              #axis.Internal.Control.DirectOutput.jogBackward := TRUE;
+	            END_IF;
+	            #axis.Internal.Control.DirectOutput.activate := TRUE;
+	            #axis.Internal.Control.DirectOutput.safetyDistance := #configData.safetyDistance;
+	            #statFBState := #FB_STATE_MOVE_TO_END_POSITION;
+	          ELSE
+	            #statEnableRampingMeasurement := (#enableRampingForward AND #statDirection = #BACKWARD AND #statActualPosition < (#statMaxPosition - #configData.safetyDistance))
+	            OR (#enableRampingBackward AND #statDirection = #FORWARD AND #statActualPosition > (#statMinPosition + #configData.safetyDistance));
+	            IF #statEnableRampingMeasurement AND #continueMeasurement THEN
+	              
+	              IF #statDirection = #FORWARD THEN
+	                #statDirection := #BACKWARD;
+	              ELSIF #statDirection = #BACKWARD THEN
+	                #statDirection := #BACKWARD;
+	              END_IF;
+	              #statFBState := #FB_STATE_ENABLE_RAMP_UP;
+	            END_IF;
+	          END_IF;
+	          //  #statEnableRampingMeasurementOld := #statEnableRampingMeasurement;
+	        END_REGION
+	        
+	        
+	      #FB_STATE_MOVE_TO_END_POSITION:
+	        
+	        REGION MOVE_TO_END_POSITION
+	          IF #axis.Internal.MotionData.DirectOutput.rampingDown THEN
+	            IF (#statDirection = #FORWARD) THEN
+	              #axis.Internal.Control.DirectOutput.jogForward := FALSE;
+	            ELSE
+	              #axis.Internal.Control.DirectOutput.jogBackward := FALSE;
+	            END_IF;
+	            
+	            #statFBState := #FB_STATE_RAMP_DOWN;
+	          END_IF;
+	        END_REGION
+	        
+	        
+	        //wait for enable ramp up
+	      #FB_STATE_ENABLE_RAMP_UP:
+	        
+	        REGION WAIT_FOR_ENABLE_RAMP_UP
+	          IF #statEnableRamping  THEN
+	            IF #statDirection = #FORWARD THEN
+	              #axis.Internal.Control.DirectOutput.commandValueRamp := #configData.forward.ramp;
+	              #axis.Internal.Control.DirectOutput.commandValueForward := ABS(#statQOutputForward);
+	              #axis.Internal.Control.DirectOutput.jogForward := TRUE;
+	            ELSIF #statDirection = #BACKWARD THEN
+	              #axis.Internal.Control.DirectOutput.commandValueRamp := #configData.backward.ramp;
+	              #axis.Internal.Control.DirectOutput.commandValueBackward := ABS(#statQOutputBackward);
+	              #axis.Internal.Control.DirectOutput.jogBackward := TRUE;
+	            END_IF;
+	            #axis.Internal.Control.DirectOutput.activate := TRUE;
+	            #axis.Internal.Control.DirectOutput.safetyDistance := #configData.safetyDistance;
+	            #statFBState := #FB_STATE_RAMP_UP;
+	          END_IF;
+	        END_REGION
+	        
+	        
+	        //start ramp up    
+	      #FB_STATE_RAMP_UP:
+	        
+	        REGION RAMP_UP
+	          //ramp down if constant velocity can not be reached
+	          IF #axis.Internal.MotionData.DirectOutput.rampingDown THEN
+	            IF (#statDirection = #FORWARD) THEN
+	              #statStepCounterMeasurementForwardAborted := #statStepCounterMeasurementForwardAborted + 1;
+	              IF #statStepCounterMeasurementForwardAborted > #configData.numberOfRetryMeasurement THEN
+	                #statMeasurementForwardDone := TRUE;
+	              END_IF;
+	              #axis.Internal.Control.DirectOutput.jogForward := FALSE;
+	            ELSIF #statDirection = #BACKWARD THEN
+	              #statStepCounterMeasurementBackwardAborted := #statStepCounterMeasurementBackwardAborted + 1;
+	              IF #statStepCounterMeasurementBackwardAborted > #configData.numberOfRetryMeasurement THEN
+	                #statMeasurementBackwardDone := TRUE;
+	              END_IF;
+	              #axis.Internal.Control.DirectOutput.jogBackward := FALSE;
+	            END_IF;
+	            #statFBState := #FB_STATE_RAMP_DOWN;
+	          ELSE
+	            //ramp up in forward direction
+	            IF #statDirection = #FORWARD THEN
+	              #axis.Internal.Control.DirectOutput.commandValueForward := #statQOutputForward;
+	              #axis.Internal.Control.DirectOutput.commandValueRamp := #configData.forward.ramp;
+	              //IF command Q-Output value is reached THEN
+	              IF #axis.Internal.MotionData.DirectOutput.QOutputValue >= #statQOutputForward THEN
+	                //ramp up is done
+	                #statFBState := #FB_STATE_WAIT_FOR_MEASUREMENT;
+	              END_IF;
+	              //ramp up in backward direction
+	            ELSIF #statDirection = #BACKWARD THEN
+	              #axis.Internal.Control.DirectOutput.commandValueBackward := #statQOutputBackward;
+	              #axis.Internal.Control.DirectOutput.commandValueRamp := #configData.backward.ramp;
+	              // IF command Q-Output value is reached THEN
+	              IF #axis.Internal.MotionData.DirectOutput.QOutputValue <= #statQOutputBackward * (-1.0) THEN
+	                // ramp up is done
+	                
+	                #statFBState := #FB_STATE_WAIT_FOR_MEASUREMENT;
+	              END_IF;
+	            END_IF;
+	            IF #statFBState = #FB_STATE_WAIT_FOR_MEASUREMENT THEN
+	              
+	              #instTONWaitForMeasurement(IN := FALSE,
+	                                         PT := DINT_TO_TIME(ABS(#configData.waitTimeMeasurement)));
+	              
+	            END_IF;
+	          END_IF;
+	        END_REGION
+	        
+	        
+	      #FB_STATE_WAIT_FOR_MEASUREMENT:
+	        
+	        REGION WAIT_FOR_MEASUREMENT
+	          IF #axis.Internal.MotionData.DirectOutput.rampingDown THEN
+	            IF (#statDirection = #FORWARD) THEN
+	              #statStepCounterMeasurementForwardAborted := #statStepCounterMeasurementForwardAborted + 1;
+	              IF #statStepCounterMeasurementForwardAborted > #configData.numberOfRetryMeasurement THEN
+	                #statMeasurementForwardDone := TRUE;
+	              END_IF;
+	              #axis.Internal.Control.DirectOutput.jogForward := FALSE;
+	            ELSIF #statDirection = #BACKWARD THEN
+	              #statStepCounterMeasurementBackwardAborted := #statStepCounterMeasurementBackwardAborted + 1;
+	              IF #statStepCounterMeasurementBackwardAborted > #configData.numberOfRetryMeasurement THEN
+	                #statMeasurementBackwardDone := TRUE;
+	              END_IF;
+	              #axis.Internal.Control.DirectOutput.jogBackward := FALSE;
+	            END_IF;
+	            #statFBState := #FB_STATE_RAMP_DOWN;
+	          ELSE
+	            
+	            #instTONWaitForMeasurement(IN := TRUE,
+	                                       PT := DINT_TO_TIME(ABS(#configData.waitTimeMeasurement)));
+	            
+	            IF #instTONWaitForMeasurement.Q THEN
+	              // reset start position and time for measurement
+	              #statPositionMeasurementStart := #statActualPosition;
+	              #statTimeMeasurementStart := #statActualTime;
+	              #statFBState := #FB_STATE_MEASUREMENT;
+	            END_IF;
+	          END_IF;
+	        END_REGION
+	        
+	        
+	      #FB_STATE_MEASUREMENT:
+	        
+	        REGION MEASUREMENT
+	          
+	          IF #axis.Internal.MotionData.DirectOutput.rampingDown
+	            OR ((#statActualTime - #statTimeMeasurementStart) >= DINT_TO_TIME(ABS(#configData.maxMeasurementTime))) THEN
+	            //set measurement data
+	            #statPositionMeasurementEnd := #statActualPosition;
+	            #statTimeMeasurementEnd := #statActualTime;
+	            IF #statDirection = #FORWARD THEN
+	              #statStepCounterMeasurementForwardAborted := 0;
+	              IF NOT #statMeasurementForwardDone THEN
+	                #measuredValues.forward.maxIndexMeasurement := #statActualStepForward;
+	                #measuredValues.forward.qOutput[#statActualStepForward] := LREAL_TO_REAL(#axis.Internal.MotionData.DirectOutput.QOutputValue);
+	                IF #statActualStepForward = #statCoarseBeginForward THEN
+	                  #measuredValues.forward.coarseBegin := #measuredValues.forward.qOutput[#statActualStepForward];
+	                END_IF;
+	                //calculate velocity to related Q-Output value
+	                #measuredValues.forward.velocity[#statActualStepForward] := LREAL_TO_REAL((#statPositionMeasurementEnd - #statPositionMeasurementStart) * 1000.0
+	                                                                                          * #axis.Internal.UnitsCorrection.velFactor
+	                                                                                          / TIME_TO_DINT(#statTimeMeasurementEnd - #statTimeMeasurementStart));
+	                //set output, velocity of last successful measured step
+	                #velocityStepForward := #measuredValues.forward.velocity[#statActualStepForward];
+	                //set output, Q-Output of last successful measured step
+	                #qOutputValueStepForward := #statQOutputForward;
+	                #measuredValues.forward.maxQOutput := #measuredValues.forward.qOutput[#statActualStepForward];
+	                #measuredValues.forward.maxVelocity := MAX(IN1 := #measuredValues.forward.maxVelocity,
+	                                                           IN2 := #measuredValues.forward.velocity[#statActualStepForward]);
+	              END_IF;
+	              IF #statQOutputForward >= ABS(#configData.forward.coarseRange.maxQOutputValue) THEN
+	                #statMeasurementForwardDone := TRUE;
+	              END_IF;
+	              //calculate max. Q-Output value depending on max. velocity
+	              IF ABS(#measuredValues.forward.maxVelocity) > ABS(#configData.forward.maxVelocity) THEN
+	                IF #statActualStepForward > 0 THEN
+	                  #measuredValues.forward.maxQOutput :=
+	                  #measuredValues.forward.qOutput[#statActualStepForward - 1] +
+	                  (#measuredValues.forward.maxQOutput - #measuredValues.forward.qOutput[#statActualStepForward - 1]) *
+	                  (ABS(#configData.forward.maxVelocity) - #measuredValues.forward.velocity[#statActualStepForward - 1]) /
+	                  (#measuredValues.forward.maxVelocity - #measuredValues.forward.velocity[#statActualStepForward - 1]);
+	                  #measuredValues.forward.maxVelocity := ABS(#configData.forward.maxVelocity);
+	                END_IF;
+	                #statMeasurementForwardDone := TRUE;
+	              END_IF;
+	              //next increment
+	              IF NOT #statMeasurementForwardDone THEN
+	                IF #statRangeForward = #FINE_RANGE THEN
+	                  #statQOutputForward := #statQOutputForward + ABS(#statForwardFineRangeStepValue);
+	                  IF #statQOutputForward >= ABS(#configData.forward.fineRange.maxQOutputValue) THEN
+	                    #statQOutputForward := ABS(#configData.forward.fineRange.maxQOutputValue);
+	                    //check next increment
+	                    IF #configData.forward.coarseRange.numberOfPoints > 0 THEN
+	                      #statRangeForward := #COARSE_RANGE;
+	                      #statCoarseBeginForward := #statActualStepForward + 1;
+	                    END_IF;
+	                  END_IF;
+	                ELSE
+	                  #statQOutputForward := MIN(IN1 := #statQOutputForward + ABS(#statForwardCoarseRangeStepValue)
+	                                             , IN2 := ABS(#configData.forward.coarseRange.maxQOutputValue));
+	                END_IF;
+	                #tempNumberOfPoints := #measuredValues.forward.maxIndexMeasurement + #measuredValues.backward.maxIndexMeasurement + 1;
+	                IF ABS(#configData.backward.minQOutputValue) > 0.0 THEN
+	                  #tempNumberOfPoints := #tempNumberOfPoints + 1;
+	                END_IF;
+	                IF #tempNumberOfPoints > "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT" + 1
+	                  OR #statActualStepForward >= "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT"
+	                THEN
+	                  #statStatusMeasurement := #statStatusMeasurement OR #STATUS_MEASUREMENT_ARRAY_FORWARD_LIMITED;
+	                  #statMeasurementForwardDone := TRUE;
+	                ELSE
+	                  #statActualStepForward := #statActualStepForward + 1;
+	                END_IF;
+	              END_IF;
+	              IF #statMeasurementForwardDone OR #axis.Internal.MotionData.DirectOutput.rampingDown THEN
+	                #axis.Internal.Control.DirectOutput.jogForward := FALSE;
+	                #statFBState := #FB_STATE_RAMP_DOWN;
+	              ELSE
+	                #axis.Internal.Control.DirectOutput.commandValueForward := #statQOutputForward;
+	                #statFBState := #FB_STATE_RAMP_UP;
+	              END_IF;
+	            ELSIF #statDirection = #BACKWARD THEN //backward
+	              #statStepCounterMeasurementBackwardAborted := 0;
+	              IF NOT #statMeasurementBackwardDone THEN
+	                #measuredValues.backward.maxIndexMeasurement := #statActualStepBackward;
+	                #measuredValues.backward.qOutput[#statActualStepBackward] := LREAL_TO_REAL(#axis.Internal.MotionData.DirectOutput.QOutputValue);
+	                IF #statActualStepBackward = #statCoarseBeginBackward THEN
+	                  #measuredValues.backward.coarseBegin := #measuredValues.backward.qOutput[#statActualStepBackward];
+	                END_IF;
+	                //calculate velocity to related Q-Output value
+	                #measuredValues.backward.velocity[#statActualStepBackward] := LREAL_TO_REAL((#statPositionMeasurementEnd - #statPositionMeasurementStart) * 1000.0
+	                                                                                            * #axis.Internal.UnitsCorrection.velFactor
+	                                                                                            / TIME_TO_DINT(#statTimeMeasurementEnd - #statTimeMeasurementStart));
+	                //set output, velocityof last successful measured step
+	                #velocityStepBackward := #measuredValues.backward.velocity[#statActualStepBackward];
+	                //set output, Q-Output of last successful measured step
+	                #qOutputValueStepBackward := #statQOutputBackward;
+	                #measuredValues.backward.maxQOutput := #measuredValues.backward.qOutput[#statActualStepBackward];
+	                #measuredValues.backward.maxVelocity := MIN(IN1 := #measuredValues.backward.maxVelocity,
+	                                                            IN2 := #measuredValues.backward.velocity[#statActualStepBackward]);
+	              END_IF;
+	              IF #statQOutputBackward >= ABS(#configData.backward.coarseRange.maxQOutputValue) THEN
+	                #statMeasurementBackwardDone := TRUE;
+	              END_IF;
+	              //calculate max. Q-Output value depending on max. velocity
+	              IF ABS(#measuredValues.backward.maxVelocity) >= ABS(#configData.backward.maxVelocity) THEN
+	                IF #statActualStepBackward > 0 THEN
+	                  #measuredValues.backward.maxQOutput :=
+	                  #measuredValues.backward.qOutput[#statActualStepBackward - 1] +
+	                  (#measuredValues.backward.maxQOutput - #measuredValues.backward.qOutput[#statActualStepBackward - 1]) *
+	                  ((-1.0) * ABS(#configData.backward.maxVelocity) - #measuredValues.backward.velocity[#statActualStepBackward - 1]) /
+	                  (#measuredValues.backward.maxVelocity - #measuredValues.backward.velocity[#statActualStepBackward - 1]);
+	                  #measuredValues.backward.maxVelocity := (-1.0) * ABS(#configData.backward.maxVelocity);
+	                END_IF;
+	                #statMeasurementBackwardDone := TRUE;
+	              END_IF;
+	              //next increment
+	              IF NOT #statMeasurementBackwardDone THEN
+	                IF #statRangeBackward = #FINE_RANGE THEN
+	                  #statQOutputBackward := #statQOutputBackward + ABS(#statBackwardFineRangeStepValue);
+	                  IF #statQOutputBackward >= ABS(#configData.backward.fineRange.maxQOutputValue) THEN
+	                    #statQOutputBackward := ABS(#configData.backward.fineRange.maxQOutputValue);
+	                    //check next increment
+	                    IF #configData.backward.coarseRange.numberOfPoints > 0 THEN
+	                      #statRangeBackward := #COARSE_RANGE;
+	                      #statCoarseBeginBackward := #statActualStepBackward + 1;
+	                    END_IF;
+	                  END_IF;
+	                ELSE
+	                  #statQOutputBackward := MIN(IN1 := #statQOutputBackward + ABS(#statBackwardCoarseRangeStepValue)
+	                                              , IN2 := ABS(#configData.backward.coarseRange.maxQOutputValue));
+	                END_IF;
+	                #tempNumberOfPoints := #measuredValues.forward.maxIndexMeasurement + #measuredValues.backward.maxIndexMeasurement + 1;
+	                IF ABS(#configData.backward.minQOutputValue) > 0.0 THEN
+	                  #tempNumberOfPoints := #tempNumberOfPoints + 1;
+	                END_IF;
+	                IF #tempNumberOfPoints > "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT" + 1
+	                  OR #statActualStepBackward >= "LSIMAHYD_VCHAR_POINTS_UPPER_LIMIT"
+	                THEN
+	                  //array of measurement points backward is to small
+	                  #statStatusMeasurement := #statStatusMeasurement OR #STATUS_MEASUREMENT_ARRAY_BACKWARD_LIMITED;
+	                  #statMeasurementBackwardDone := TRUE;
+	                ELSE
+	                  #statActualStepBackward := #statActualStepBackward + 1;
+	                END_IF;
+	              END_IF;
+	              IF #statMeasurementBackwardDone OR #axis.Internal.MotionData.DirectOutput.rampingDown THEN
+	                #axis.Internal.Control.DirectOutput.jogBackward := FALSE;
+	                #statFBState := #FB_STATE_RAMP_DOWN;
+	              ELSE
+	                #axis.Internal.Control.DirectOutput.commandValueBackward := #statQOutputBackward;
+	                #statFBState := #FB_STATE_RAMP_UP;
+	              END_IF;
+	            END_IF;
+	          END_IF;
+	        END_REGION
+	        
+	        
+	      #FB_STATE_RAMP_DOWN:
+	        
+	        REGION RAMP_DOWN
+	          
+	          IF NOT #axis.Internal.MotionData.DirectOutput.active THEN
+	            //ramp up is done
+	            IF #statCommandAborted THEN
+	              //set PLCopen outputs
+	              #statDirection := #UNDEFINED;
+	              #axis.Internal.Control.DirectOutput.activate := FALSE;
+	              #statFBState := #FB_STATE_COMMAND_ABORTED;
+	            ELSE
+	              IF #statDirection = #FORWARD THEN
+	                //reset output for valve forward
+	                IF NOT #statMeasurementBackwardDone THEN
+	                  //measurement backward
+	                  #statDirection := #BACKWARD;
+	                  #statFBState := #FB_STATE_ENABLE_RAMP_UP;
+	                ELSIF NOT #statMeasurementForwardDone AND #configData.backward.enableMeasurement THEN
+	                  #statDirection := #BACKWARD;
+	                  #statFBState := #FB_STATE_ENABLE_MOVE_TO_END_POS;
+	                ELSIF #statMeasurementForwardDone THEN
+	                  #statStatus := #STATUS_EXECUTION_FINISHED;
+	                ELSE
+	                  #statFBState := #FB_STATE_ENABLE_RAMP_UP;
+	                END_IF;
+	              ELSE
+	                //reset output for valve Backward
+	                IF NOT #statMeasurementForwardDone THEN
+	                  //measurement forward
+	                  #statDirection := #FORWARD;
+	                  #statFBState := #FB_STATE_ENABLE_RAMP_UP;
+	                ELSIF NOT #statMeasurementBackwardDone AND #configData.forward.enableMeasurement THEN
+	                  #statDirection := #FORWARD;
+	                  #statFBState := #FB_STATE_ENABLE_MOVE_TO_END_POS;
+	                ELSIF #statMeasurementBackwardDone THEN
+	                  #statStatus := #STATUS_EXECUTION_FINISHED;
+	                ELSE
+	                  #statFBState := #FB_STATE_ENABLE_RAMP_UP;
+	                END_IF;
+	              END_IF;
+	            END_IF;
+	            IF #statStatus = #STATUS_EXECUTION_FINISHED THEN
+	              #axis.Internal.Control.DirectOutput.activate := FALSE;
+	              #axis.Internal.Control.DirectOutput.jogForward := FALSE;
+	              #axis.Internal.Control.DirectOutput.jogBackward := FALSE;
+	              #statDirection := #UNDEFINED;
+	              
+	              // measurement state was not reached
+	              IF #statStepCounterMeasurementForwardAborted > #configData.numberOfRetryMeasurement AND
+	                #statActualStepForward > 0 THEN
+	                #statActualStepForward := #statActualStepForward - 1;
+	                #statStatusMeasurement := #statStatusMeasurement OR #STATUS_MEASUREMENT_DISTANCE_TO_SMALL;
+	              END_IF;
+	              IF #statStepCounterMeasurementBackwardAborted > #configData.numberOfRetryMeasurement AND
+	                #statActualStepBackward > 0 THEN
+	                #statActualStepBackward := #statActualStepBackward - 1;
+	                #statStatusMeasurement := #statStatusMeasurement OR #STATUS_MEASUREMENT_DISTANCE_TO_SMALL;
+	              END_IF;
+	              //set PLCopen outputs
+	              #statStatusMeasurement := (#statStatusMeasurement AND 16#00F0);
+	            END_IF;
+	          END_IF;
+	        END_REGION
+	        
+	        
+	        #FB_STATE_ERROR,
+	        #FB_STATE_COMMAND_ABORTED:
+	          #statDirection := #UNDEFINED;
+	          #axis.Internal.Control.DirectOutput.activate := FALSE;
+	          #axis.Internal.Control.DirectOutput.jogForward := FALSE;
+	          #axis.Internal.Control.DirectOutput.jogBackward := FALSE;
+	          
+	      ELSE
+	        ;
+	    END_CASE;
+	    
+	    #statNumOfLoop := #statNumOfLoop + 1;
+	  UNTIL (#statFBState = #statFBStateOld)
+	    OR #statNumOfLoop >= 3
+	  END_REPEAT;
+	
+	END_REGION STATE_MACHINE
+	
+	REGION OUTPUTS
+	  // Write outputs
+	  IF (#statStatus = #STATUS_EXECUTION_FINISHED) AND (#statDone = FALSE) THEN // Execution finished without errors
+	    #statDone := TRUE;
+	    #statBusy := FALSE;
+	    #statError := FALSE;
+	    #statCommandAborted := FALSE;
+	    #statFBState := #FB_STATE_NO_PROCESSING; // Switch state machine to "no processing"
+	    
+	  ELSIF (#statStatus.%X15 = TRUE) AND (#statError = FALSE) THEN // Error occurred (#statStatus is 16#8000 to 16#FFFF)
+	    #statDone := FALSE;
+	    #statBusy := FALSE;
+	    #statError := TRUE;
+	    #statCommandAborted := FALSE;
+	    #statFBState := #FB_STATE_NO_PROCESSING; // Switch state machine to "no processing"
+	  ELSIF #statCommandAborted AND #statFBState = #FB_STATE_COMMAND_ABORTED THEN
+	    #statDone := FALSE;
+	    #statBusy := FALSE;
+	    #statError := FALSE;
+	    #statCommandAborted := TRUE;
+	    #statFBState := #FB_STATE_NO_PROCESSING; // Switch state machine to "no processing"
+	  ELSIF (#tempExecute = FALSE) AND ((#statDone = TRUE) OR (#statError = TRUE) OR (#statCommandAborted = TRUE))
+	    AND #statFBState = #FB_STATE_NO_PROCESSING
+	  THEN // Reset outputs
+	    #statDone := FALSE;
+	    #statBusy := FALSE;
+	    #statError := FALSE;
+	    #statCommandAborted := FALSE;
+	    #statStatus := #STATUS_NO_CALL;
+	  END_IF;
+	  //move to end stop
+	  #statStatusMeasurement.%X0 := (#statFBState = #FB_STATE_ENABLE_MOVE_TO_END_POS) OR (#statFBState = #FB_STATE_MOVE_TO_END_POSITION);
+	  //waiting
+	  #statStatusMeasurement.%X1 := (#statFBState = #FB_STATE_ENABLE_MOVE_TO_END_POS) OR (#statFBState = #FB_STATE_ENABLE_RAMP_UP);
+	  //busy
+	  #statStatusMeasurement.%X2 := (#statFBState = #FB_STATE_MOVE_TO_END_POSITION) OR (#statFBState = #FB_STATE_RAMP_UP) OR (#statFBState = #FB_STATE_RAMP_DOWN);
+	  //aborted
+	  #statStatusMeasurement.%X3 := (#statFBState = #FB_STATE_COMMAND_ABORTED);
+	  // error
+	  #statStatusMeasurement.%X15 := (#statFBState = #FB_STATE_ERROR);
+	  
+	  
+	  IF #statStatus = #STATUS_NO_CALL THEN
+	    #statDirection := #UNDEFINED;
+	    #axis.Internal.Control.DirectOutput.activate := FALSE;
+	    #axis.Internal.Control.DirectOutput.jogForward := FALSE;
+	    #axis.Internal.Control.DirectOutput.jogBackward := FALSE;
+	    #statStatusMeasurement := #STATUS_MEASUREMENT_OK;
+	  END_IF;
+	  
+	  // Write static values to outputs
+	  #done := #statDone;
+	  #busy := #statBusy;
+	  #commandAborted := #statCommandAborted;
+	  #requestForward := #statDirection.%X0;
+	  #requestBackward := #statDirection.%X1;
+	  
+	  IF #statStatus <> #STATUS_NO_CALL THEN
+	    #error := #statError;
+	    #status := #statStatus;
+	    #statusMeasurement := #statStatusMeasurement;
+	  END_IF;
+	  
+	END_REGION OUTPUTS  
+	
+	#statAbortOld := #abort;
+	#statEnableRampingOld := #statEnableRamping;
+	
+END_FUNCTION_BLOCK
+

@@ -1,0 +1,220 @@
+﻿FUNCTION_BLOCK "SimaHydTO_FindObjects"
+{ S7_Optimized_Access := 'TRUE' }
+FAMILY : SimaHydTO
+VERSION : 1.0
+   VAR_INPUT 
+      execute : Bool;
+   END_VAR
+
+   VAR_OUTPUT 
+      done { ExternalWritable := 'False'} : Bool;
+      busy { ExternalWritable := 'False'} : Bool;
+      error { ExternalWritable := 'False'} : Bool;
+      status { ExternalWritable := 'False'} : Word := #STATUS_NO_CALL;
+   END_VAR
+
+   VAR_IN_OUT 
+      axesArray : Array[*] of "SimaHydTO_typeAxesArray";
+      vCharArray : Array[*] of "SimaHydTO_typeVCharArray";
+   END_VAR
+
+   VAR 
+      statAxesArrMinIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statAxesArrMaxIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statVCharArrMinIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statVCharArrMaxIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;
+      statVCharArrayFull { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statAxesArrayFull { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statExecuteOld { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statBusy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      statStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word := #STATUS_NO_CALL;
+      statFBState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt := #FB_STATE_NO_PROCESSING;
+      statActDB_NUMBER { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UInt;
+      statRunTime { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statMemStart { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+      statMem { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : LReal;
+   END_VAR
+
+   VAR_TEMP 
+      tempExecute : Bool;
+      tempInt : Int;
+      tempInitDone : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : DInt := 0;
+      FB_STATE_PROCESSING : DInt := 2;
+      STATUS_EXECUTION_FINISHED : Word := 16#0000;
+      STATUS_NO_CALL : Word := 16#7000;
+      STATUS_FIRST_CALL : Word := 16#7001;
+      STATUS_SUBSEQUENT_CALL : Word := 16#7002;
+      ERR_UNDEFINED_STATE : Word := 16#8600;
+   END_VAR
+
+
+BEGIN
+	//=============================================================================
+	//SIEMENS AG
+	//(c)Copyright 2016 All Rights Reserved
+	//-----------------------------------------------------------------------------
+	//Library:       SimaHydTO_HMI
+	//Tested with:   S7-1500 V2.5
+	//Engineering:   TIA Portal V15
+	//Restrictions:  -
+	//Requirements:  S7-1500(T)
+	//Functionality: Search for hydraulic axes and valve charachteristics in project
+	//-----------------------------------------------------------------------------
+	//Change log table:
+	//Version  Date       Expert in charge Changes applied
+	//01.00.00 12.07.2019 ArSc             First released version
+	//=============================================================================
+	
+	#tempExecute := #execute; // Work with temporary value / create process image
+	
+	REGION TRIGGERING
+	    IF (#tempExecute = TRUE) AND (#statExecuteOld = FALSE) // Check if FB is triggered
+	        
+	    THEN // First call; initialize FB
+	        #statDone := FALSE;
+	        #statBusy := TRUE;
+	        #statError := FALSE;
+	        #statStatus := #STATUS_FIRST_CALL;
+	        
+	        #statAxesArrMinIndex := DINT_TO_INT(LOWER_BOUND(ARR := #axesArray, DIM := 1));
+	        #statAxesArrMaxIndex := DINT_TO_INT(UPPER_BOUND(ARR := #axesArray, DIM := 1));
+	        #statVCharArrMinIndex := DINT_TO_INT(LOWER_BOUND(ARR := #vCharArray, DIM := 1));
+	        #statVCharArrMaxIndex := DINT_TO_INT(UPPER_BOUND(ARR := #vCharArray, DIM := 1));
+	        
+	        #statVCharArrayFull := FALSE;
+	        #statAxesArrayFull := FALSE;
+	        #statActDB_NUMBER := 1;
+	        
+	        #statFBState := #FB_STATE_PROCESSING; // State machine - start processing
+	        
+	    ELSIF (#statStatus = #STATUS_FIRST_CALL) THEN
+	        #statStatus := #STATUS_SUBSEQUENT_CALL;
+	    END_IF;
+	    
+	    // Edge detection 'execute' input
+	    #statExecuteOld := #tempExecute;
+	END_REGION TRIGGERING
+	
+	IF (#statStatus = #STATUS_NO_CALL) THEN // Nothing to do -> End here to reduce "system load"
+	    RETURN;
+	END_IF;
+	
+	REGION STATE_MACHINE
+	    CASE #statFBState OF // State machine of FB
+	        #FB_STATE_NO_PROCESSING: // No processing active (Note: this state must always be present and left empty)
+	            ;
+	            
+	        #FB_STATE_PROCESSING:
+	            // Processing active
+	            // 
+	            #statRunTime := RUNTIME(MEM := #statMemStart);
+	            
+	            REPEAT
+	                IF TypeOfDB(#statActDB_NUMBER) = LSimaHydTO_typeVCharData THEN
+	                    // enter vchar to data exchange
+	                    #tempInitDone := FALSE;
+	                    FOR #tempInt := #statVCharArrMinIndex TO #statVCharArrMaxIndex DO
+	                        IF #vCharArray[#tempInt].VChar_DB = #statActDB_NUMBER THEN
+	                            #vCharArray[#tempInt].initialized := TRUE;
+	                            #tempInitDone := TRUE;
+	                            EXIT;
+	                        END_IF;
+	                    END_FOR;
+	                    IF NOT #tempInitDone THEN
+	                        FOR #tempInt := #statVCharArrMinIndex TO #statVCharArrMaxIndex DO
+	                            IF NOT #vCharArray[#tempInt].initialized THEN
+	                                #vCharArray[#tempInt].VChar_DB := #statActDB_NUMBER;
+	                                #vCharArray[#tempInt].initialized := TRUE;
+	                                #tempInitDone := TRUE;
+	                                EXIT;
+	                            END_IF;
+	                            IF #tempInt = #statVCharArrMaxIndex THEN
+	                                #statVCharArrayFull := TRUE;
+	                            END_IF;
+	                            
+	                        END_FOR;
+	                    END_IF;
+	                    
+	                ELSIF TypeOfDB(#statActDB_NUMBER) = LSimaHydTO_typeAxisData THEN
+	                    #tempInitDone := FALSE;
+	                    FOR #tempInt := #statAxesArrMinIndex TO #statAxesArrMaxIndex DO
+	                        IF #axesArray[#tempInt].axisData = #statActDB_NUMBER THEN
+	                            #axesArray[#tempInt].initialized := TRUE;
+	                            #tempInitDone := TRUE;
+	                            EXIT;
+	                        END_IF;
+	                    END_FOR;
+	                    IF NOT #tempInitDone THEN
+	                        FOR #tempInt := #statAxesArrMinIndex TO #statAxesArrMaxIndex DO
+	                            IF NOT #axesArray[#tempInt].initialized THEN
+	                                #axesArray[#tempInt].axisData := #statActDB_NUMBER;
+	                                #axesArray[#tempInt].initialized := TRUE;
+	                                #tempInitDone := TRUE;
+	                                EXIT;
+	                            END_IF;
+	                            IF #tempInt = #statAxesArrMaxIndex THEN
+	                                #statAxesArrayFull := TRUE;
+	                            END_IF;
+	                        END_FOR;
+	                    END_IF;
+	                    
+	                END_IF;
+	                IF #statAxesArrayFull AND #statVCharArrayFull THEN
+	                    #statBusy := FALSE;
+	                    #statStatus := #STATUS_EXECUTION_FINISHED;
+	                END_IF;
+	                
+	                IF #statStatus = #STATUS_SUBSEQUENT_CALL THEN
+	                    IF #statActDB_NUMBER < uint#65_535 THEN
+	                        #statActDB_NUMBER += 1;
+	                    ELSE
+	                        #statBusy := FALSE;
+	                        #statStatus := #STATUS_EXECUTION_FINISHED;
+	                    END_IF;
+	                END_IF;
+	                #statMem := #statMemStart;
+	                #statRunTime := RUNTIME(MEM := #statMem);
+	            UNTIL NOT #statBusy OR #statRunTime > 0.01 // interupt after 10 ms
+	            END_REPEAT;
+	            
+	            
+	        ELSE // Undefined state in state machine reached
+	            #statStatus := #ERR_UNDEFINED_STATE;
+	    END_CASE;
+	END_REGION STATE_MACHINE
+	
+	REGION OUTPUTS
+	    // Write outputs
+	    IF (#statStatus = #STATUS_EXECUTION_FINISHED) AND (#statDone = FALSE) THEN // Execution finished without errors
+	        #statDone := TRUE;
+	        #statBusy := FALSE;
+	        #statError := FALSE;
+	        #statFBState := #FB_STATE_NO_PROCESSING; // Switch state machine to "no processing"
+	        
+	    ELSIF (#statStatus.%X15 = TRUE) AND (#statError = FALSE) THEN // Error occurred (#statStatus is 16#8000 to 16#FFFF)
+	        #statDone := FALSE;
+	        #statBusy := FALSE;
+	        #statError := TRUE;
+	        #statFBState := #FB_STATE_NO_PROCESSING; // Switch state machine to "no processing"
+	        
+	    ELSIF (#tempExecute = FALSE) AND ((#statDone = TRUE) OR (#statError = TRUE)) THEN // Reset outputs
+	        #statDone := FALSE;
+	        #statBusy := FALSE;
+	        #statError := FALSE;
+	        #statStatus := #STATUS_NO_CALL;
+	    END_IF;
+	    
+	    // Write static values to outputs
+	    #done := #statDone;
+	    #busy := #statBusy;
+	    #error := #statError;
+	    #status := #statStatus;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

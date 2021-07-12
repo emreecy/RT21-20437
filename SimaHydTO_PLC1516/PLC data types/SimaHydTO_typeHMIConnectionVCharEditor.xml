@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V16" />
+  <DocumentInfo>
+    <Created>2021-07-12T14:47:20.7741622Z</Created>
+    <ExportSetting>WithDefaults</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>TIA Portal Version Control Interface</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <OptionPackage>
+        <DisplayName>TIA Portal Openness</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+      <OptionPackage>
+        <DisplayName>STEP 7 Safety</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </OptionPackage>
+      <Product>
+        <DisplayName>WinCC Professional</DisplayName>
+        <DisplayVersion>V16</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+  <Section Name="None">
+    <Member Name="Command" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharEditorCommand&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Data: HMI -&gt; PLC</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="LoadMeasuredValues" Datatype="Bool" /><Member Name="LoadVChar" Datatype="Bool" /><Member Name="VCharLoad" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharSelectorCommand&quot;"><Sections><Section Name="None"><Member Name="previousObject" Datatype="Bool" /><Member Name="nextObject" Datatype="Bool" /><Member Name="executeDirectIndexSelection" Datatype="Bool" /><Member Name="directIndexSelection" Datatype="Int" /></Section></Sections></Member><Member Name="CreateNewVChar" Datatype="Bool" /><Member Name="ShowPreviousRow" Datatype="Bool" /><Member Name="ShowNextRow" Datatype="Bool" /><Member Name="SaveVChar" Datatype="Bool" /><Member Name="SaveVCharAs" Datatype="Bool" /><Member Name="VCharSave" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharSelectorCommand&quot;"><Sections><Section Name="None"><Member Name="previousObject" Datatype="Bool" /><Member Name="nextObject" Datatype="Bool" /><Member Name="executeDirectIndexSelection" Datatype="Bool" /><Member Name="directIndexSelection" Datatype="Int" /></Section></Sections></Member><Member Name="AbortEditor" Datatype="Bool" /><Member Name="DeleteRow" Datatype="Bool" /><Member Name="AddRow" Datatype="Bool" /><Member Name="SortAndDisplay" Datatype="Bool" /></Section></Sections></Member>
+    <Member Name="Status" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharEditorStatus&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Data: PLC -&gt; HMI</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="EditorActive" Datatype="Bool" /><Member Name="SaveAsSelected" Datatype="Bool" /><Member Name="Busy" Datatype="Bool" /><Member Name="Error" Datatype="Bool" /><Member Name="VCharLoad" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharSelectorStatus&quot;"><Sections><Section Name="None"><Member Name="actualVCharIndex" Datatype="Int" /><Member Name="selectedVCharInteger" Datatype="UInt" /><Member Name="selectedVChar" Datatype="DB_ANY" /><Member Name="selectedVCharName" Datatype="WString[24]" /><Member Name="dataValid" Datatype="Bool" /><Member Name="dataError" Datatype="Bool" /></Section></Sections></Member><Member Name="VCharSave" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharSelectorStatus&quot;"><Sections><Section Name="None"><Member Name="actualVCharIndex" Datatype="Int" /><Member Name="selectedVCharInteger" Datatype="UInt" /><Member Name="selectedVChar" Datatype="DB_ANY" /><Member Name="selectedVCharName" Datatype="WString[24]" /><Member Name="dataValid" Datatype="Bool" /><Member Name="dataError" Datatype="Bool" /></Section></Sections></Member></Section></Sections></Member>
+    <Member Name="Parameter" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharEditorParameter&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Data: PLC &lt;-&gt; HMI (Load and save)</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="ActualTableStartIndex" Datatype="Int" /><Member Name="SelectedTableIndex" Datatype="Int" /><Member Name="MaximumNumberOfLines" Datatype="Int" /><Member Name="NumberOfUsedLines" Datatype="Int" /><Member Name="NumberOfUsableLines" Datatype="Int" /></Section></Sections></Member>
+    <Member Name="Table" Datatype="&quot;SimaHydTO_typeHMIConnectionVCharEditorTable&quot;"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Data table of VChar</MultiLanguageText></Comment><Sections><Section Name="None"><Member Name="Appearance" Datatype="Array[0..20] of Int" /><Member Name="Index" Datatype="Array[0..20] of Int" /><Member Name="Velocity" Datatype="Array[0..20] of Real" /><Member Name="QOutput" Datatype="Array[0..20] of Real" /><Member Name="VelocityLimitPositive" Datatype="Real" /><Member Name="VelocityLimitNegative" Datatype="Real" /><Member Name="ZeroZonePositive" Datatype="Real" /><Member Name="ZeroZoneNegative" Datatype="Real" /></Section></Sections></Member>
+    <Member Name="VCharNameToSave" Datatype="WString[24]"><AttributeList><BooleanAttribute Name="ExternalAccessible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalVisible" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="ExternalWritable" SystemDefined="true">true</BooleanAttribute><BooleanAttribute Name="SetPoint" SystemDefined="true">false</BooleanAttribute></AttributeList><Comment><MultiLanguageText Lang="en-US">Name of VChar to be saved</MultiLanguageText></Comment></Member>
+  </Section>
+</Sections></Interface>
+      <IsFailsafeCompliant>false</IsFailsafeCompliant>
+      <Name>SimaHydTO_typeHMIConnectionVCharEditor</Name>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>HMI interface: VChar editor</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="4" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>SimaHydTO_typeHMIConnectionVCharEditor</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="6" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>
